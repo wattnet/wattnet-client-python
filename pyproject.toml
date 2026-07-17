@@ -1,0 +1,135 @@
+[tool.poetry]
+name = "wattnet-client"
+version = "1.0.0"
+description = "Python client for the wattnet API, returning pandas DataFrames"
+license = "Apache-2.0"
+authors = ["Jaime Iglesias Blanco <iglesias@ifca.es>"]
+readme = "README.md"
+homepage = "https://wattnet.eu"
+repository = "https://github.com/wattnet/wattnet-client-python"
+documentation = "https://github.com/wattnet/wattnet-client-python#readme"
+keywords = [
+    "energy", "electricity", "carbon", "carbon-footprint",
+    "water", "water-footprint", "water-impact", "greenscore",
+    "api", "client", "pandas", "dataframe",
+    "sustainability", "wattnet",
+]
+packages = [{ include = "wattnet" }]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.15"
+requests = "^2.33.0"
+pandas = "^2.2.0"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^9.0"
+pytest-cov = "^7.0.0"
+responses = "^0.25.0"
+
+[tool.poetry.group.dev.dependencies]
+tox = "^4.16.0"
+tox-gh-actions = "^3.0"
+pre-commit = "^4.0"
+
+[tool.poetry.group.lint.dependencies]
+flake8 = ">=4,<8"
+flake8-bugbear = ">=22.3,<26.0"
+flake8-docstrings = "^1.6"
+flake8-typing-imports = "^1.12"
+flake8-colors = "^0.1"
+pep8-naming = ">=0.12,<0.16"
+pydocstyle = "^6.1"
+
+[tool.poetry.group.format.dependencies]
+black = ">=22.3,<27.0"
+isort = "^8.0"
+
+[tool.poetry.group.security.dependencies]
+bandit = "^1.9.0"
+
+[tool.poetry.group.deps.dependencies]
+deptry = ">=0.23"
+
+[tool.poetry.group.types.dependencies]
+mypy = "^2.0"
+types-requests = "^2.31.0"
+
+[tool.poetry.group.examples.dependencies]
+ipykernel = "^6.29"
+nbconvert = "^7.16"
+nbformat = "^5.10"
+
+[tool.poetry.group.release.dependencies]
+twine = ">=4.0.2,<7.0.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit", "tests/integration"]
+addopts = "--tb=short"
+markers = [
+    "integration: requires a running wattnet-api instance",
+]
+
+[tool.coverage.run]
+source = ["wattnet"]
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.black]
+target-version = ["py310", "py311", "py312", "py313", "py314"]
+
+[tool.deptry]
+known_first_party = ["wattnet"]
+
+[tool.deptry.per_rule_ignores]
+DEP002 = [
+    "pytest", "pytest-cov", "responses",
+    "tox", "tox-gh-actions",
+    "pre-commit",
+    "flake8", "flake8-bugbear", "flake8-docstrings", "flake8-typing-imports", "flake8-colors",
+    "pep8-naming", "pydocstyle",
+    "black", "isort",
+    "bandit",
+    "mypy", "types-requests",
+    "twine",
+    "deptry",
+    "ipykernel", "nbconvert", "nbformat",
+]
+
+[tool.isort]
+profile = "black"
+known_first_party = ["wattnet"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_optional = true
+ignore_missing_imports = true
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = "wattnet.*"
+disallow_untyped_defs = true
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
