@@ -42,7 +42,7 @@ pandas = "^2.2.0"
 [tool.poetry.group.test.dependencies]
 pytest = "^9.0"
 pytest-cov = "^7.0.0"
-responses = "^0.25.0"
+responses = ">=0.25,<0.27"
 
 [tool.poetry.group.dev.dependencies]
 tox = "^4.16.0"
@@ -73,7 +73,7 @@ mypy = "^2.0"
 types-requests = "^2.31.0"
 
 [tool.poetry.group.examples.dependencies]
-ipykernel = "^6.29"
+ipykernel = ">=6.29,<8.0"
 nbconvert = "^7.16"
 nbformat = "^5.10"
 
