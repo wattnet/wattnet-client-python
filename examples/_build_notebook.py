@@ -80,11 +80,41 @@ generation = client.get_generation(zone=ZONE, start=START, end=END)
 print(generation.shape)
 generation.head()""")
 
+md(
+    "Omit `zone` and the same call returns every supported zone in one request, "
+    "rather than looping over zone codes yourself. The `zone` column tells the "
+    "rows apart:"
+)
+code("""\
+all_zones = client.get_generation(start=START, end=END)
+print(all_zones.shape)
+print(all_zones["zone"].nunique(), "zones in a single call")
+all_zones.head()""")
+
 md("### Load\n\n`get_load()` — total electricity demand.")
 code("""\
 load = client.get_load(zone=ZONE, start=START, end=END)
 print(load.shape)
 load.head()""")
+
+md(
+    "Every zone-filtered method also accepts a `lat`/`lon` pair instead of a zone "
+    "code — the API resolves the coordinate to the zone that contains it, which is "
+    "handy when all you have is a site location:"
+)
+code("""\
+by_coord = client.get_load(lat=40.4, lon=-3.7, start=START, end=END)
+print(by_coord.shape)
+by_coord.head()""")
+
+md(
+    "Because `timestamp` arrives as a tz-aware `datetime64[ns, UTC]` column, "
+    "standard pandas time-series tooling works with no conversion step — here, "
+    "hourly means from the raw resolution:"
+)
+code("""\
+hourly = load.set_index("timestamp").resample("1h").mean(numeric_only=True)
+hourly""")
 
 md("### Imports\n\n`get_imports()` — electricity imported into the zone, by origin.")
 code("""\
@@ -214,6 +244,31 @@ try:
     WattnetClient()
 except ConfigurationError as exc:
     print(f"ConfigurationError: {exc}")""")
+
+md(
+    "Errors coming back from the API itself raise `WattnetAPIError`, which carries "
+    "the HTTP `status_code` and the API's own `detail` message so you can branch on "
+    "them instead of parsing strings. Here, a coordinate in the middle of the "
+    "Atlantic resolves to no zone at all:"
+)
+code("""\
+from wattnet.client import WattnetAPIError
+
+try:
+    client.get_load(lat=0.0, lon=-30.0, start=START, end=END)
+except WattnetAPIError as exc:
+    print(f"status_code: {exc.status_code}")
+    print(f"detail:      {exc.detail}")""")
+
+md(
+    "Note that an *unrecognised zone code* is **not** an error: the API does not "
+    "validate zone codes against its zone list, it just filters on them, so you "
+    "get a successful response with zero rows. Check `.empty` rather than relying "
+    "on an exception:"
+)
+code("""\
+missing = client.get_generation(zone="NOT-A-ZONE", start=START, end=END)
+print(f"empty: {missing.empty}  shape: {missing.shape}")""")
 
 nb["cells"] = cells
 nbf.write(nb, "examples/quickstart.ipynb")

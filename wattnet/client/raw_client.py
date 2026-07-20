@@ -25,6 +25,7 @@ from wattnet.client.enums import (
     ImpactType,
     ProductionType,
     Scope,
+    Zone,
 )
 from wattnet.client.exceptions import ConfigurationError, WattnetAPIError
 from wattnet.client.settings import (
@@ -155,7 +156,7 @@ class WattnetRawClient:
     @decorators.get("/generation")
     def get_generation(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         production_type: Optional[ProductionType] = None,
@@ -168,7 +169,7 @@ class WattnetRawClient:
     @decorators.get("/load")
     def get_load(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         start: Optional[datetime] = None,
@@ -180,10 +181,10 @@ class WattnetRawClient:
     @decorators.get("/imports")
     def get_imports(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        source_zone: Optional[str] = None,
+        source_zone: Optional[Zone] = None,
         source_lat: Optional[float] = None,
         source_lon: Optional[float] = None,
         start: Optional[datetime] = None,
@@ -195,10 +196,10 @@ class WattnetRawClient:
     @decorators.get("/exports")
     def get_exports(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        destination_zone: Optional[str] = None,
+        destination_zone: Optional[Zone] = None,
         destination_lat: Optional[float] = None,
         destination_lon: Optional[float] = None,
         start: Optional[datetime] = None,
@@ -210,7 +211,7 @@ class WattnetRawClient:
     @decorators.get("/mix")
     def get_mix(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         production_type: Optional[ProductionType] = None,
@@ -225,7 +226,7 @@ class WattnetRawClient:
     @decorators.get("/footprints")
     def get_footprints(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         footprint_type: Optional[FootprintType] = None,
@@ -245,7 +246,7 @@ class WattnetRawClient:
     @decorators.get("/impacts")
     def get_impacts(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         impact_type: Optional[ImpactType] = None,
@@ -261,7 +262,7 @@ class WattnetRawClient:
     @decorators.get("/green-score")
     def get_green_score(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         scope: Optional[Scope] = None,
@@ -278,10 +279,10 @@ class WattnetRawClient:
     @decorators.get("/flow-share")
     def get_flow_share(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        destination_zone: Optional[str] = None,
+        destination_zone: Optional[Zone] = None,
         destination_lat: Optional[float] = None,
         destination_lon: Optional[float] = None,
         start: Optional[datetime] = None,
@@ -293,10 +294,10 @@ class WattnetRawClient:
     @decorators.get("/mix-share")
     def get_mix_share(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        origin_zone: Optional[str] = None,
+        origin_zone: Optional[Zone] = None,
         origin_lat: Optional[float] = None,
         origin_lon: Optional[float] = None,
         start: Optional[datetime] = None,
@@ -308,10 +309,10 @@ class WattnetRawClient:
     @decorators.get("/footprint-share")
     def get_footprint_share(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        source_zone: Optional[str] = None,
+        source_zone: Optional[Zone] = None,
         source_lat: Optional[float] = None,
         source_lon: Optional[float] = None,
         footprint_type: Optional[FootprintType] = None,
@@ -325,10 +326,10 @@ class WattnetRawClient:
     @decorators.get("/impact-share")
     def get_impact_share(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        source_zone: Optional[str] = None,
+        source_zone: Optional[Zone] = None,
         source_lat: Optional[float] = None,
         source_lon: Optional[float] = None,
         impact_type: Optional[ImpactType] = None,

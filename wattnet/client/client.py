@@ -17,6 +17,7 @@ from wattnet.client.enums import (
     ImpactType,
     ProductionType,
     Scope,
+    Zone,
 )
 from wattnet.client.raw_client import WattnetRawClient
 
@@ -42,7 +43,7 @@ class WattnetClient(WattnetRawClient):
     @dataframe(block="production")
     def get_generation(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         production_type: Optional[ProductionType] = None,
@@ -62,7 +63,7 @@ class WattnetClient(WattnetRawClient):
     @dataframe(block="blocks")
     def get_load(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         start: Optional[datetime] = None,
@@ -74,10 +75,10 @@ class WattnetClient(WattnetRawClient):
     @dataframe(block="imports")
     def get_imports(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        source_zone: Optional[str] = None,
+        source_zone: Optional[Zone] = None,
         source_lat: Optional[float] = None,
         source_lon: Optional[float] = None,
         start: Optional[datetime] = None,
@@ -98,10 +99,10 @@ class WattnetClient(WattnetRawClient):
     @dataframe(block="exports")
     def get_exports(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        destination_zone: Optional[str] = None,
+        destination_zone: Optional[Zone] = None,
         destination_lat: Optional[float] = None,
         destination_lon: Optional[float] = None,
         start: Optional[datetime] = None,
@@ -122,7 +123,7 @@ class WattnetClient(WattnetRawClient):
     @dataframe(block="production")
     def get_mix(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         production_type: Optional[ProductionType] = None,
@@ -144,7 +145,7 @@ class WattnetClient(WattnetRawClient):
     @dataframe()
     def get_footprints(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         footprint_type: Optional[FootprintType] = None,
@@ -174,7 +175,7 @@ class WattnetClient(WattnetRawClient):
     @dataframe()
     def get_impacts(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         impact_type: Optional[ImpactType] = None,
@@ -200,7 +201,7 @@ class WattnetClient(WattnetRawClient):
     @dataframe()
     def get_green_score(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         scope: Optional[Scope] = None,
@@ -226,10 +227,10 @@ class WattnetClient(WattnetRawClient):
     @dataframe(block="flows")
     def get_flow_share(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        destination_zone: Optional[str] = None,
+        destination_zone: Optional[Zone] = None,
         destination_lat: Optional[float] = None,
         destination_lon: Optional[float] = None,
         start: Optional[datetime] = None,
@@ -250,10 +251,10 @@ class WattnetClient(WattnetRawClient):
     @dataframe(block="shares")
     def get_mix_share(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        origin_zone: Optional[str] = None,
+        origin_zone: Optional[Zone] = None,
         origin_lat: Optional[float] = None,
         origin_lon: Optional[float] = None,
         start: Optional[datetime] = None,
@@ -274,10 +275,10 @@ class WattnetClient(WattnetRawClient):
     @dataframe(block="blocks")
     def get_footprint_share(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        source_zone: Optional[str] = None,
+        source_zone: Optional[Zone] = None,
         source_lat: Optional[float] = None,
         source_lon: Optional[float] = None,
         footprint_type: Optional[FootprintType] = None,
@@ -302,10 +303,10 @@ class WattnetClient(WattnetRawClient):
     @dataframe(block="blocks")
     def get_impact_share(
         self,
-        zone: Optional[str] = None,
+        zone: Optional[Zone] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
-        source_zone: Optional[str] = None,
+        source_zone: Optional[Zone] = None,
         source_lat: Optional[float] = None,
         source_lon: Optional[float] = None,
         impact_type: Optional[ImpactType] = None,

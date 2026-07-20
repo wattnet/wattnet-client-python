@@ -8,6 +8,8 @@ client = WattnetClient(token="...")
 df = client.get_generation(zone="ES")
 """
 
+from importlib.metadata import version
+
 from wattnet.client.auth import register
 from wattnet.client.client import WattnetClient
 from wattnet.client.exceptions import (
@@ -18,9 +20,10 @@ from wattnet.client.exceptions import (
 )
 from wattnet.client.raw_client import WattnetRawClient
 
-__version__ = "0.1.0"
+__version__ = version("wattnet-client")
 
 __all__ = [
+    "__version__",
     "WattnetClient",
     "WattnetRawClient",
     "register",

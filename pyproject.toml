@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "wattnet-client"
 version = "1.0.0"
-description = "Python client for the wattnet API, returning pandas DataFrames"
+description = "Official Python client for the wattnet API: electricity generation, load, and carbon and water footprint data as pandas DataFrames"
 license = "Apache-2.0"
 authors = ["Jaime Iglesias Blanco <iglesias@ifca.es>"]
 readme = "README.md"
