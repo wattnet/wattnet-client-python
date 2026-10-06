@@ -270,6 +270,38 @@ code("""\
 missing = client.get_generation(zone="NOT-A-ZONE", start=START, end=END)
 print(f"empty: {missing.empty}  shape: {missing.shape}")""")
 
+md(
+    "## Async clients\n\n"
+    "For asyncio applications there are `AsyncWattnetClient` (DataFrames) and "
+    "`AsyncWattnetRawClient` (raw JSON). They expose the same methods as their "
+    "synchronous counterparts, every one of them a coroutine, and are used as "
+    "async context managers so the underlying `aiohttp` session is closed for you. "
+    "Jupyter supports top-level `await`, so we can call them directly:"
+)
+code("""\
+from wattnet.client import AsyncWattnetClient
+
+async with AsyncWattnetClient(token=os.environ["WATTNET_TOKEN"]) as async_client:
+    async_generation = await async_client.get_generation(zone=ZONE, start=START, end=END)
+print(async_generation.shape)
+async_generation.head()""")
+
+md(
+    "Because the calls are coroutines, independent requests can run concurrently "
+    "with `asyncio.gather`:"
+)
+code("""\
+import asyncio
+
+from wattnet.client import AsyncWattnetRawClient
+
+async with AsyncWattnetRawClient(token=os.environ["WATTNET_TOKEN"]) as async_raw:
+    load, generation = await asyncio.gather(
+        async_raw.get_load(zone=ZONE, start=START, end=END),
+        async_raw.get_generation(zone=ZONE, start=START, end=END),
+    )
+print(f"load rows: {len(load)}  generation rows: {len(generation)}")""")
+
 nb["cells"] = cells
 nbf.write(nb, "examples/quickstart.ipynb")
 print("wrote examples/quickstart.ipynb")

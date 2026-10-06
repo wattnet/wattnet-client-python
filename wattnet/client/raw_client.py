@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 import requests
 
 from wattnet.client import decorators
-from wattnet.client._util import error_detail
+from wattnet.client._util import error_detail, parse_retry_after
 from wattnet.client.auth import (
     CredentialsTokenProvider,
     StaticTokenProvider,
@@ -413,18 +413,8 @@ def _build_auth(
 
 
 def _retry_delay_for(response: requests.Response, default: float) -> float:
-    """Seconds to wait before retrying, honoring a numeric `Retry-After`.
-
-    Falls back to `default` if the header is absent or not a plain integer
-    (e.g. an HTTP-date value, which we don't bother parsing).
-    """
-    retry_after = response.headers.get("Retry-After")
-    if retry_after is None:
-        return default
-    try:
-        return max(float(retry_after), 0.0)
-    except ValueError:
-        return default
+    """Seconds to wait before retrying, honoring a numeric `Retry-After`."""
+    return parse_retry_after(response.headers.get("Retry-After"), default)
 
 
 def _parse_response(response: requests.Response) -> Any:
