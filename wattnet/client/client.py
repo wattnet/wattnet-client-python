@@ -199,7 +199,7 @@ class WattnetClient(WattnetRawClient):
         )
 
     @dataframe()
-    def get_green_score(
+    def get_environmental_score(
         self,
         zone: Optional[Zone] = None,
         lat: Optional[float] = None,
@@ -210,8 +210,8 @@ class WattnetClient(WattnetRawClient):
         aggregate: bool = False,
         use_global: bool = True,
     ) -> pd.DataFrame:
-        """Return the GreenScore (0-100) of electricity consumption in a zone."""
-        return super().get_green_score(
+        """Return the EnvironmentalScore (0-100) of electricity consumption in a zone."""
+        return super().get_environmental_score(
             zone=zone,
             lat=lat,
             lon=lon,

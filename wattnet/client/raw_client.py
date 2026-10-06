@@ -259,8 +259,8 @@ class WattnetRawClient:
         """Water impact of electricity consumption in a zone."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
 
-    @decorators.get("/green-score")
-    def get_green_score(
+    @decorators.get("/environmental-score")
+    def get_environmental_score(
         self,
         zone: Optional[Zone] = None,
         lat: Optional[float] = None,
@@ -271,7 +271,7 @@ class WattnetRawClient:
         aggregate: bool = False,
         use_global: bool = True,
     ) -> List[Dict[str, Any]]:
-        """Return the GreenScore (0-100) of electricity consumption in a zone."""
+        """Return the EnvironmentalScore (0-100) of electricity consumption in a zone."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
 
     # -- shares metrics --------------------------------------------------

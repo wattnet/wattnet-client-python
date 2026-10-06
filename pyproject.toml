@@ -10,7 +10,7 @@ repository = "https://github.com/wattnet/wattnet-client-python"
 documentation = "https://github.com/wattnet/wattnet-client-python#readme"
 keywords = [
     "energy", "electricity", "carbon", "carbon-footprint",
-    "water", "water-footprint", "water-impact", "greenscore",
+    "water", "water-footprint", "water-impact", "environmental-score",
     "api", "client", "pandas", "dataframe",
     "sustainability", "wattnet",
 ]

@@ -302,7 +302,7 @@ CLIENT_METHODS = [
     ("get_mix", "/mix", {"zone": "ES"}, "production"),
     ("get_footprints", "/footprints", {"zone": "ES"}, None),
     ("get_impacts", "/impacts", {"zone": "ES"}, None),
-    ("get_green_score", "/green-score", {"zone": "ES"}, None),
+    ("get_environmental_score", "/environmental-score", {"zone": "ES"}, None),
     ("get_flow_share", "/flow-share", {"zone": "ES"}, "flows"),
     ("get_mix_share", "/mix-share", {"zone": "ES"}, "shares"),
     ("get_footprint_share", "/footprint-share", {"zone": "ES"}, "blocks"),
