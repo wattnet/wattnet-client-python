@@ -271,7 +271,7 @@ class WattnetRawClient:
         aggregate: bool = False,
         use_global: bool = True,
     ) -> List[Dict[str, Any]]:
-        """Return the EnvironmentalScore (0-100) of electricity consumption in a zone."""
+        """Return the EnvironmentalScore (0-100) of electricity use in a zone."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
 
     # -- shares metrics --------------------------------------------------
