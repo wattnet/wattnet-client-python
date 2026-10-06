@@ -108,7 +108,7 @@ payload = raw.get_generation(zone="ES")  # list[dict], straight from the API
 
 ### Async client
 
-For asyncio applications (for example Home Assistant integrations) use `AsyncWattnetRawClient`. It exposes the same methods as `WattnetRawClient`, every one of them a coroutine, and returns raw JSON. It is built on [aiohttp](https://docs.aiohttp.org/) and does not import pandas. If you prefer DataFrames, `AsyncWattnetClient` is its counterpart of `WattnetClient`: the same methods as coroutines returning a `pandas.DataFrame`.
+For asyncio applications (for example the [wattnet Home Assistant integration](https://github.com/wattnet/wattnet-home-assistant)) use `AsyncWattnetRawClient`. It exposes the same methods as `WattnetRawClient`, every one of them a coroutine, and returns raw JSON. It is built on [aiohttp](https://docs.aiohttp.org/) and does not import pandas. If you prefer DataFrames, `AsyncWattnetClient` is its counterpart of `WattnetClient`: the same methods as coroutines returning a `pandas.DataFrame`.
 
 ```python
 import asyncio
