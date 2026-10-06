@@ -28,6 +28,7 @@
 
 - **One method per endpoint** — `client.get_generation(...)`, `client.get_footprints(...)`, etc., mirroring the API 1:1.
 - **DataFrames by default** — every method returns a tidy `pandas.DataFrame`. Need the raw JSON instead? Use `WattnetRawClient`.
+- **Sync and async** — `WattnetClient` and `WattnetRawClient` for scripts and notebooks, `AsyncWattnetClient` and `AsyncWattnetRawClient` for asyncio applications.
 - **Two ways to authenticate** — a static bearer token, or an email/password pair; the library fetches and caches tokens for you.
 - **Typed, autocomplete-friendly** — zone codes, production types, footprint scopes, etc. are typed for IDE/Jupyter tab-completion.
 
@@ -104,6 +105,34 @@ from wattnet.client import WattnetRawClient
 raw = WattnetRawClient(token="<your-token>")
 payload = raw.get_generation(zone="ES")  # list[dict], straight from the API
 ```
+
+### Async client
+
+For asyncio applications (for example Home Assistant integrations) use `AsyncWattnetRawClient`. It exposes the same methods as `WattnetRawClient`, every one of them a coroutine, and returns raw JSON. It is built on [aiohttp](https://docs.aiohttp.org/) and does not import pandas. If you prefer DataFrames, `AsyncWattnetClient` is its counterpart of `WattnetClient`: the same methods as coroutines returning a `pandas.DataFrame`.
+
+```python
+import asyncio
+
+from wattnet.client import AsyncWattnetRawClient
+
+
+async def main() -> None:
+    async with AsyncWattnetRawClient(token="<your-token>") as client:
+        zones = await client.get_zones()
+        footprints = await client.get_footprints(zone="ES", footprint_type="carbon")
+
+
+asyncio.run(main())
+```
+
+```python
+from wattnet.client import AsyncWattnetClient
+
+async with AsyncWattnetClient(token="<your-token>") as client:
+    df = await client.get_footprints(zone="ES", footprint_type="carbon")
+```
+
+Pass your own `aiohttp.ClientSession` with `session=...` to reuse an existing connection pool. A session you supply is never closed by the client. Authentication, retries, `Retry-After` handling and the token refresh on a 401 behave exactly as in the synchronous clients. `async_register()` is the async counterpart of `register()`.
 
 ## Available methods
 

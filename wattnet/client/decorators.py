@@ -6,20 +6,34 @@
 - `@retry(...)` — retries a method on transient network errors.
 - `@cached(ttl=...)` — caches a method's return value per-instance, keyed by
   its arguments, for near-static endpoints (zones, factors).
+- `@acached(ttl=...)` — same as `@cached`, for coroutine methods.
 - `@dataframe(...)` — flattens the JSON returned by a `WattnetClient`
   override (which simply delegates to the raw method) into a DataFrame.
+- `@adataframe(...)` — same as `@dataframe`, for coroutine methods.
+
+pandas is only imported when a `@dataframe` method actually runs, so the raw
+and async clients work without paying for it at import time.
 """
 
 import functools
 import inspect
 import time
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Optional, Tuple, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
 
-import pandas as pd
 import requests
 
-from wattnet.client import flatten
+if TYPE_CHECKING:  # pragma: no cover
+    import pandas as pd
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -143,6 +157,62 @@ def cached(ttl: float) -> Callable[[F], F]:
     return decorator
 
 
+def acached(ttl: float) -> Callable[[F], F]:
+    """Async counterpart of `cached`, for coroutine methods.
+
+    Same per-instance store and `(name, arguments)` keys as `cached`. Only
+    successful results are stored, so a failed call is retried next time.
+    """
+
+    def decorator(func: F) -> F:
+        signature = inspect.signature(func)
+
+        @functools.wraps(func)
+        async def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+            bound = signature.bind(self, *args, **kwargs)
+            bound.apply_defaults()
+            key = tuple(
+                sorted(
+                    (name, value)
+                    for name, value in bound.arguments.items()
+                    if name != "self"
+                )
+            )
+            store: Dict[Any, Tuple[float, Any]] = self.__dict__.setdefault(
+                "_response_cache", {}
+            )
+            cache_key = (func.__name__, key)
+            now = time.monotonic()
+            entry = store.get(cache_key)
+            if entry is not None and now - entry[0] < ttl:
+                return entry[1]
+            value = await func(self, *args, **kwargs)
+            store[cache_key] = (now, value)
+            return value
+
+        return wrapper  # type: ignore[return-value]
+
+    return decorator
+
+
+def _frame(
+    result: Any,
+    series: Optional[str],
+    block: Optional[str],
+    value_key: str,
+    record: bool,
+) -> "pd.DataFrame":
+    import pandas as pd
+
+    from wattnet.client import flatten
+
+    if record:
+        return pd.DataFrame([result])
+    return flatten.explode(
+        result, series_key=series, block_key=block, value_key=value_key
+    )
+
+
 def dataframe(
     series: Optional[str] = "series",
     block: Optional[str] = None,
@@ -165,13 +235,32 @@ def dataframe(
 
     def decorator(func: F) -> F:
         @functools.wraps(func)
-        def wrapper(self: Any, *args: Any, **kwargs: Any) -> pd.DataFrame:
+        def wrapper(self: Any, *args: Any, **kwargs: Any) -> "pd.DataFrame":
             result = func(self, *args, **kwargs)
-            if record:
-                return pd.DataFrame([result])
-            return flatten.explode(
-                result, series_key=series, block_key=block, value_key=value_key
-            )
+            return _frame(result, series, block, value_key, record)
+
+        return wrapper  # type: ignore[return-value]
+
+    return decorator
+
+
+def adataframe(
+    series: Optional[str] = "series",
+    block: Optional[str] = None,
+    value_key: str = "values",
+    record: bool = False,
+) -> Callable[[F], F]:
+    """Async counterpart of `dataframe`, for coroutine methods.
+
+    Takes the same parameters; the wrapped coroutine is awaited and its JSON
+    result flattened into a DataFrame.
+    """
+
+    def decorator(func: F) -> F:
+        @functools.wraps(func)
+        async def wrapper(self: Any, *args: Any, **kwargs: Any) -> "pd.DataFrame":
+            result = await func(self, *args, **kwargs)
+            return _frame(result, series, block, value_key, record)
 
         return wrapper  # type: ignore[return-value]
 
