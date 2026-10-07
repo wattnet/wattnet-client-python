@@ -16,10 +16,13 @@
 [![Publish](https://github.com/wattnet/wattnet-client-python/actions/workflows/publish.yml/badge.svg)](https://github.com/wattnet/wattnet-client-python/actions/workflows/publish.yml)
 [![Release Please](https://github.com/wattnet/wattnet-client-python/actions/workflows/release-please.yml/badge.svg?branch=main)](https://github.com/wattnet/wattnet-client-python/actions/workflows/release-please.yml)
 [![codecov](https://codecov.io/gh/wattnet/wattnet-client-python/graph/badge.svg)](https://codecov.io/gh/wattnet/wattnet-client-python)
+[![GitHub stars](https://img.shields.io/github/stars/wattnet/wattnet-client-python?style=social)](https://github.com/wattnet/wattnet-client-python/stargazers)
 [![PyPI version](https://img.shields.io/pypi/v/wattnet-client)](https://pypi.org/project/wattnet-client/)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/wattnet-client?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/wattnet-client)
 [![Python](https://img.shields.io/pypi/pyversions/wattnet-client)](https://pypi.org/project/wattnet-client/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 `wattnet-client` is the official Python client for the [wattnet API](https://github.com/wattnet/wattnet-api). It maps every API endpoint to a client method and hands back a [pandas](https://pandas.pydata.org/) `DataFrame` — no manual HTTP calls or JSON flattening required.
