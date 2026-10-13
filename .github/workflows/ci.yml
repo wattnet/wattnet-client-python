@@ -55,6 +55,15 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
+      - name: Upload test results to Codecov
+        if: matrix.python-version == '3.14' && !cancelled()
+        uses: codecov/codecov-action@v7
+        with:
+          report_type: test_results
+          files: junit.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
   # Runs against a real wattnet-api instance when WATTNET_TEST_BASE_URL/
   # WATTNET_TEST_TOKEN secrets are configured; the tests skip themselves
   # otherwise, so this job is safe to keep enabled unconditionally.
