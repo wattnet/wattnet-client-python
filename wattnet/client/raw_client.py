@@ -15,7 +15,7 @@ import requests
 from wattnet.client import decorators
 from wattnet.client._util import error_detail, parse_retry_after
 from wattnet.client.auth import (
-    CredentialsTokenProvider,
+    ClientCredentialsTokenProvider,
     StaticTokenProvider,
     TokenProvider,
 )
@@ -30,6 +30,7 @@ from wattnet.client.enums import (
 from wattnet.client.exceptions import ConfigurationError, WattnetAPIError
 from wattnet.client.settings import (
     DEFAULT_BASE_URL,
+    DEFAULT_ISSUER_URL,
     DEFAULT_RETRY_COUNT,
     DEFAULT_RETRY_DELAY,
     DEFAULT_STATIC_CACHE_TTL_SECONDS,
@@ -44,21 +45,23 @@ _Self = TypeVar("_Self", bound="WattnetRawClient")
 class WattnetRawClient:
     """Thin wrapper over the wattnet API's HTTP endpoints, returning raw JSON.
 
-    Authenticate with either a pre-issued bearer token, or an email/password
-    pair — in the latter case the client transparently fetches and caches a
-    token from the wattnet token-request service, refreshing it as needed::
+    Authenticate with either a pre-issued bearer token, or the `client_id` and
+    `client_secret` of a wattnet credential — in the latter case the client
+    transparently fetches and caches a token (OAuth 2.0 `client_credentials`),
+    refreshing it as needed::
 
         WattnetRawClient(token="...")
-        WattnetRawClient(email="you@example.com", password="...")
+        WattnetRawClient(client_id="...", client_secret="...")
     """
 
     def __init__(
         self,
         token: Optional[str] = None,
-        email: Optional[str] = None,
-        password: Optional[str] = None,
+        client_id: Optional[str] = None,
+        client_secret: Optional[str] = None,
         base_url: str = DEFAULT_BASE_URL,
-        token_url: str = DEFAULT_TOKEN_URL,
+        issuer_url: str = DEFAULT_ISSUER_URL,
+        token_url: Optional[str] = DEFAULT_TOKEN_URL,
         session: Optional[requests.Session] = None,
         timeout: float = DEFAULT_TIMEOUT,
         retry_count: int = DEFAULT_RETRY_COUNT,
@@ -72,8 +75,9 @@ class WattnetRawClient:
         self._retry_delay = retry_delay
         self._auth: TokenProvider = _build_auth(
             token,
-            email,
-            password,
+            client_id,
+            client_secret,
+            issuer_url,
             token_url,
             self._session,
             timeout,
@@ -389,26 +393,34 @@ class WattnetRawClient:
 
 def _build_auth(
     token: Optional[str],
-    email: Optional[str],
-    password: Optional[str],
-    token_url: str,
+    client_id: Optional[str],
+    client_secret: Optional[str],
+    issuer_url: str,
+    token_url: Optional[str],
     session: requests.Session,
     timeout: float,
     retry_count: int,
     retry_delay: float,
 ) -> TokenProvider:
-    if token is not None and (email is not None or password is not None):
+    if token is not None and (client_id is not None or client_secret is not None):
         raise ConfigurationError(
-            "Provide either `token` or `email`+`password`, not both."
+            "Provide either `token` or `client_id`+`client_secret`, not both."
         )
     if token is not None:
         return StaticTokenProvider(token)
-    if email is not None and password is not None:
-        return CredentialsTokenProvider(
-            email, password, token_url, session, timeout, retry_count, retry_delay
+    if client_id is not None and client_secret is not None:
+        return ClientCredentialsTokenProvider(
+            client_id,
+            client_secret,
+            issuer_url,
+            token_url,
+            session,
+            timeout,
+            retry_count,
+            retry_delay,
         )
     raise ConfigurationError(
-        "Must provide either `token`, or both `email` and `password`."
+        "Must provide either `token`, or both `client_id` and `client_secret`."
     )
 
 

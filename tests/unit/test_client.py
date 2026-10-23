@@ -13,7 +13,7 @@ from ..conftest import BASE_URL, TOKEN, TOKEN_URL
 
 def test_constructor_rejects_token_and_credentials_together():
     with pytest.raises(ConfigurationError):
-        WattnetRawClient(token="t", email="e@example.com", password="p")
+        WattnetRawClient(token="t", client_id="id", client_secret="s")
 
 
 def test_constructor_requires_some_auth():
@@ -21,9 +21,9 @@ def test_constructor_requires_some_auth():
         WattnetRawClient()
 
 
-def test_constructor_requires_both_email_and_password():
+def test_constructor_requires_both_client_id_and_secret():
     with pytest.raises(ConfigurationError):
-        WattnetRawClient(email="e@example.com")
+        WattnetRawClient(client_id="id")
 
 
 @responses.activate
@@ -98,19 +98,19 @@ def test_client_status_is_a_one_row_dataframe(client):
 def test_client_refreshes_token_once_on_401_then_succeeds():
     responses.add(
         responses.POST,
-        f"{TOKEN_URL}/get_token",
+        TOKEN_URL,
         json={
             "access_token": "first",
-            "expires_at": "2099-01-01T00:00:00Z",
+            "expires_in": 3600,
         },
         status=200,
     )
     responses.add(
         responses.POST,
-        f"{TOKEN_URL}/get_token",
+        TOKEN_URL,
         json={
             "access_token": "second",
-            "expires_at": "2099-01-01T00:00:00Z",
+            "expires_in": 3600,
         },
         status=200,
     )
@@ -120,8 +120,8 @@ def test_client_refreshes_token_once_on_401_then_succeeds():
     responses.add(responses.GET, f"{BASE_URL}/zones", json=[], status=200)
 
     client = WattnetClient(
-        email="user@example.com",
-        password="secret",
+        client_id="id",
+        client_secret="secret",
         base_url=BASE_URL,
         token_url=TOKEN_URL,
     )

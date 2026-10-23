@@ -4,9 +4,13 @@ from typing import Any, Optional, cast
 
 
 def error_detail(response: Any) -> Optional[str]:
-    """Best-effort extraction of the `detail` field from an error response."""
+    """Best-effort extraction of the error message from an error response.
+
+    Reads `detail` (wattnet API) or `error_description` (OAuth 2.0 token endpoint).
+    """
     try:
-        detail = response.json().get("detail")
+        body = response.json()
+        detail = body.get("detail") or body.get("error_description")
     except (ValueError, AttributeError):
         return cast(Optional[str], response.text) or None
     return cast(Optional[str], detail)

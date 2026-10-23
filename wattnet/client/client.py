@@ -26,7 +26,7 @@ class WattnetClient(WattnetRawClient):
     """Query the wattnet API and get pandas DataFrames back.
 
     client = WattnetClient(token="...")
-    # or: client = WattnetClient(email="you@example.com", password="...")
+    # or: client = WattnetClient(client_id="...", client_secret="...")
 
     df = client.get_generation(zone="ES", start=..., end=...)
     """

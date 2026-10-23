@@ -17,7 +17,7 @@ from wattnet.client import decorators
 from wattnet.client._util import parse_retry_after
 from wattnet.client.async_auth import (
     TRANSIENT_ERRORS,
-    AsyncCredentialsTokenProvider,
+    AsyncClientCredentialsTokenProvider,
     AsyncStaticTokenProvider,
     AsyncTokenProvider,
     response_detail,
@@ -33,6 +33,7 @@ from wattnet.client.enums import (
 from wattnet.client.exceptions import ConfigurationError, WattnetAPIError
 from wattnet.client.settings import (
     DEFAULT_BASE_URL,
+    DEFAULT_ISSUER_URL,
     DEFAULT_RETRY_COUNT,
     DEFAULT_RETRY_DELAY,
     DEFAULT_STATIC_CACHE_TTL_SECONDS,
@@ -47,9 +48,10 @@ _Self = TypeVar("_Self", bound="AsyncWattnetRawClient")
 class AsyncWattnetRawClient:
     """Async wrapper over the wattnet API's HTTP endpoints, returning raw JSON.
 
-    Authenticate with either a pre-issued bearer token, or an email/password
-    pair — in the latter case the client transparently fetches and caches a
-    token from the wattnet token-request service, refreshing it as needed::
+    Authenticate with either a pre-issued bearer token, or the `client_id` and
+    `client_secret` of a wattnet credential — in the latter case the client
+    transparently fetches and caches a token (OAuth 2.0 `client_credentials`),
+    refreshing it as needed::
 
         async with AsyncWattnetRawClient(token="...") as client:
             zones = await client.get_zones()
@@ -62,10 +64,11 @@ class AsyncWattnetRawClient:
     def __init__(
         self,
         token: Optional[str] = None,
-        email: Optional[str] = None,
-        password: Optional[str] = None,
+        client_id: Optional[str] = None,
+        client_secret: Optional[str] = None,
         base_url: str = DEFAULT_BASE_URL,
-        token_url: str = DEFAULT_TOKEN_URL,
+        issuer_url: str = DEFAULT_ISSUER_URL,
+        token_url: Optional[str] = DEFAULT_TOKEN_URL,
         session: Optional[aiohttp.ClientSession] = None,
         timeout: float = DEFAULT_TIMEOUT,
         retry_count: int = DEFAULT_RETRY_COUNT,
@@ -80,8 +83,9 @@ class AsyncWattnetRawClient:
         self._retry_delay = retry_delay
         self._auth: AsyncTokenProvider = _build_auth(
             token,
-            email,
-            password,
+            client_id,
+            client_secret,
+            issuer_url,
             token_url,
             session,
             timeout,
@@ -99,7 +103,7 @@ class AsyncWattnetRawClient:
         if self._session is None or self._session.closed:
             self._session = aiohttp.ClientSession()
             self._owns_session = True
-            if isinstance(self._auth, AsyncCredentialsTokenProvider):
+            if isinstance(self._auth, AsyncClientCredentialsTokenProvider):
                 self._auth.set_session(self._session)
         return self._session
 
@@ -421,24 +425,26 @@ class AsyncWattnetRawClient:
 
 def _build_auth(
     token: Optional[str],
-    email: Optional[str],
-    password: Optional[str],
-    token_url: str,
+    client_id: Optional[str],
+    client_secret: Optional[str],
+    issuer_url: str,
+    token_url: Optional[str],
     session: Optional[aiohttp.ClientSession],
     timeout: float,
     retry_count: int,
     retry_delay: float,
 ) -> AsyncTokenProvider:
-    if token is not None and (email is not None or password is not None):
+    if token is not None and (client_id is not None or client_secret is not None):
         raise ConfigurationError(
-            "Provide either `token` or `email`+`password`, not both."
+            "Provide either `token` or `client_id`+`client_secret`, not both."
         )
     if token is not None:
         return AsyncStaticTokenProvider(token)
-    if email is not None and password is not None:
-        return AsyncCredentialsTokenProvider(
-            email,
-            password,
+    if client_id is not None and client_secret is not None:
+        return AsyncClientCredentialsTokenProvider(
+            client_id,
+            client_secret,
+            issuer_url,
             token_url,
             session,  # type: ignore[arg-type]  # set lazily by the client
             timeout,
@@ -446,7 +452,7 @@ def _build_auth(
             retry_delay,
         )
     raise ConfigurationError(
-        "Must provide either `token`, or both `email` and `password`."
+        "Must provide either `token`, or both `client_id` and `client_secret`."
     )
 
 

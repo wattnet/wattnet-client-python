@@ -29,7 +29,7 @@
 - **One method per endpoint** — `client.get_generation(...)`, `client.get_footprints(...)`, etc., mirroring the API 1:1.
 - **DataFrames by default** — every method returns a tidy `pandas.DataFrame`. Need the raw JSON instead? Use `WattnetRawClient`.
 - **Sync and async** — `WattnetClient` and `WattnetRawClient` for scripts and notebooks, `AsyncWattnetClient` and `AsyncWattnetRawClient` for asyncio applications.
-- **Two ways to authenticate** — a static bearer token, or an email/password pair; the library fetches and caches tokens for you.
+- **Two ways to authenticate** — a static bearer token, or the `client_id` and `client_secret` of a wattnet credential; the library fetches and caches tokens for you.
 - **Typed, autocomplete-friendly** — zone codes, production types, footprint scopes, etc. are typed for IDE/Jupyter tab-completion.
 
 See [`examples/quickstart.ipynb`](examples/quickstart.ipynb) for every method exercised against the real API, with actual DataFrame outputs saved in the notebook.
@@ -56,8 +56,8 @@ from wattnet.client import WattnetClient
 # Option 1: a pre-issued bearer token
 client = WattnetClient(token="<your-token>")
 
-# Option 2: email + password — the client fetches and caches a token for you
-client = WattnetClient(email="you@example.com", password="<your-password>")
+# Option 2: a wattnet credential — the client fetches and caches a token for you
+client = WattnetClient(client_id="<your-client-id>", client_secret="<your-client-secret>")
 
 # Every call returns a pandas DataFrame
 df = client.get_generation(zone="ES", production_type="solar")
@@ -78,22 +78,13 @@ a single call instead of querying one at a time.
 
 ### Authentication
 
-Credentials are exchanged for a bearer token via the wattnet token-request service (`POST /get_token`), which the client calls transparently the first time it's needed. The token is cached in memory until shortly before its `expires_at` (as reported by the server, typically ~24h), then silently refreshed on the next call — including a one-time retry if the API itself rejects the cached token as expired.
+A credential (`client_id` and `client_secret`) is created in the [developer portal](https://developer.wattnet.eu). The client exchanges it for a bearer token with the OAuth 2.0 `client_credentials` grant the first time it's needed, keeps the token in memory, and renews it once 80 % of its lifetime has passed (but never later than a minute before it expires). If the API still rejects the cached token as expired, the client refreshes it and retries the request once.
 
 ```python
-client = WattnetClient(email="you@example.com", password="<your-password>")
+client = WattnetClient(client_id="<your-client-id>", client_secret="<your-client-secret>")
 ```
 
-You must have already registered your email with the token-request service before it will be accepted — do that once with `register()`:
-
-```python
-from wattnet.client import register
-
-register("you@example.com", "<your-password>")  # returns a confirmation message
-```
-
-`email` must be pre-authorized server-side by the wattnet team; registering an
-already-registered email is a harmless no-op.
+Read the secret from an environment variable or a secrets manager rather than writing it in code. The token endpoint is discovered from the OpenID Connect issuer (`https://auth.wattnet.eu/realms/wattnet`).
 
 ### Raw JSON access
 
@@ -132,7 +123,7 @@ async with AsyncWattnetClient(token="<your-token>") as client:
     df = await client.get_footprints(zone="ES", footprint_type="carbon")
 ```
 
-Pass your own `aiohttp.ClientSession` with `session=...` to reuse an existing connection pool. A session you supply is never closed by the client. Authentication, retries, `Retry-After` handling and the token refresh on a 401 behave exactly as in the synchronous clients. `async_register()` is the async counterpart of `register()`.
+Pass your own `aiohttp.ClientSession` with `session=...` to reuse an existing connection pool. A session you supply is never closed by the client. Authentication, retries, `Retry-After` handling and the token refresh on a 401 behave exactly as in the synchronous clients. 
 
 ## Available methods
 
@@ -163,7 +154,8 @@ Every method's parameters mirror the corresponding API endpoint's query paramete
 | Constructor argument | Environment variable      | Default                                 |
 | --------------------- | -------------------------- | ---------------------------------------- |
 | `base_url`            | `WATTNET_API_BASE_URL`     | `https://api.wattnet.eu/v1`               |
-| `token_url`           | `WATTNET_TOKEN_URL`        | `https://api.wattnet.eu/token-request`    |
+| `issuer_url`          | `WATTNET_ISSUER_URL`       | `https://auth.wattnet.eu/realms/wattnet`  |
+| `token_url`           | `WATTNET_TOKEN_URL`        | read from the issuer's discovery document |
 
 Other constructor options: `session` (bring your own `requests.Session`), `timeout`, `retry_count`, `retry_delay`.
 

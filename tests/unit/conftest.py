@@ -42,6 +42,7 @@ class FakeServer:
         return [r for r in self.requests if (r.method, r.path) == (method, path)]
 
     async def handle(self, request: web.Request) -> web.StreamResponse:
+        await request.read()  # keep the body readable once the handler is done
         self.requests.append(request)
         queue = self.queues.get((request.method, request.path))
         if not queue:
@@ -67,7 +68,7 @@ async def server():
     await site.start()
     port = site._server.sockets[0].getsockname()[1]
     fake.base_url = f"http://127.0.0.1:{port}/v1"
-    fake.token_url = f"http://127.0.0.1:{port}/token-request"
+    fake.token_url = f"http://127.0.0.1:{port}/token"
     yield fake
     await runner.cleanup()
 
@@ -78,7 +79,7 @@ def make_client(server):
         kwargs.setdefault("base_url", server.base_url)
         kwargs.setdefault("token_url", server.token_url)
         kwargs.setdefault("retry_delay", 0)
-        if not any(k in kwargs for k in ("token", "email")):
+        if not any(k in kwargs for k in ("token", "client_id")):
             kwargs["token"] = TOKEN
         return AsyncWattnetRawClient(**kwargs)
 
