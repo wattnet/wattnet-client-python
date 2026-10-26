@@ -7,7 +7,7 @@ authors = ["Jaime Iglesias Blanco <iglesias@ifca.es>"]
 readme = "README.md"
 homepage = "https://wattnet.eu"
 repository = "https://github.com/wattnet/wattnet-client-python"
-documentation = "https://github.com/wattnet/wattnet-client-python#readme"
+documentation = "https://docs.wattnet.eu/user-guide/python-client/python-client-quickstart/"
 keywords = [
     "energy", "electricity", "carbon", "carbon-footprint",
     "water", "water-footprint", "water-impact", "environmental-score",
