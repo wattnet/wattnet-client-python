@@ -17,9 +17,9 @@ Closes #
 
 - [ ] All existing tests pass (`pytest` / `tox`)
 - [ ] New tests added for the changed behaviour
-- [ ] Code is formatted (`black wattnet/`, `isort wattnet/`)
-- [ ] Linter passes (`flake8 wattnet/`)
-- [ ] Type-check passes (`mypy -p wattnet.api`)
+- [ ] Code is formatted (`ruff format wattnet/`)
+- [ ] Linter passes (`ruff check wattnet/`)
+- [ ] Type-check passes (`mypy -p wattnet.client`)
 - [ ] Security scan passes (`bandit -r wattnet/`)
 - [ ] Docstrings updated where needed
 - [ ] `CONTRIBUTING.md` still accurate (update if the dev workflow changed)
