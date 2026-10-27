@@ -59,7 +59,7 @@ async def test_get_generation_returns_dataframe(server, make_df_client):
     assert list(df["value"]) == [12.5]
     assert df.loc[0, "production_type"] == "solar"
     assert df.loc[0, "valid"]
-    assert str(df["timestamp"].dtype) == "datetime64[ns, UTC]"
+    assert str(df["timestamp"].dtype) in {"datetime64[ns, UTC]", "datetime64[us, UTC]"}
 
 
 async def test_get_zones_returns_dataframe(server, make_df_client, zones_payload):

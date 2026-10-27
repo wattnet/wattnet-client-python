@@ -18,7 +18,7 @@ change API-side, the resulting DataFrame's column order won't change either.
 The tests in `tests/unit/test_flatten.py` pin this down per payload shape.
 
 A resulting `timestamp` column is always parsed to a tz-aware (UTC)
-`datetime64[ns, UTC]` dtype rather than left as the API's raw ISO 8601
+`datetime64` dtype rather than left as the API's raw ISO 8601
 string, so callers get a plottable/resamplable column for free.
 """
 

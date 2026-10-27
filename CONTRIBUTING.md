@@ -51,7 +51,7 @@ Or via tox:
 tox -e integration
 ```
 
-**Full tox matrix** (unit tests on py3.10–3.14, lint, type-check, format, security, dependency audit, build):
+**Full tox matrix** (unit tests on py3.10–3.15, lint, type-check, format, security, dependency audit, build):
 
 ```bash
 tox
