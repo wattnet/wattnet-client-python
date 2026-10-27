@@ -159,7 +159,9 @@ impacts = client.get_impacts(zone=ZONE, start=START, end=END)
 print(impacts.shape)
 impacts.head()""")
 
-md("### EnvironmentalScore\n\n`get_environmental_score()` — a single 0-100 sustainability score.")
+md(
+    "### EnvironmentalScore\n\n`get_environmental_score()` — a single 0-100 sustainability score."
+)
 code("""\
 environmental_score = client.get_environmental_score(zone=ZONE, start=START, end=END)
 print(environmental_score.shape)
