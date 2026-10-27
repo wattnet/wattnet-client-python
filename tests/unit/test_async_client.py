@@ -8,14 +8,14 @@ exercised without any mocking library.
 import asyncio
 import subprocess
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import Dict, List
 
 import aiohttp
 import pytest
 
-from wattnet.client import AsyncWattnetRawClient, async_register
-from wattnet.client.async_auth import AsyncCredentialsTokenProvider
+from wattnet.client import AsyncWattnetRawClient
+from wattnet.client.async_auth import AsyncClientCredentialsTokenProvider
 from wattnet.client.exceptions import (
     AuthenticationError,
     ConfigurationError,
@@ -25,12 +25,8 @@ from wattnet.client.exceptions import (
 from ..conftest import TOKEN
 
 
-def _expires(minutes: int) -> str:
-    return (datetime.now(timezone.utc) + timedelta(minutes=minutes)).isoformat()
-
-
-def _token(name: str, minutes: int = 30) -> Dict[str, str]:
-    return {"access_token": name, "expires_at": _expires(minutes)}
+def _token(name: str, expires_in: int = 3600) -> Dict[str, object]:
+    return {"access_token": name, "expires_in": expires_in, "token_type": "Bearer"}
 
 
 # -- construction ---------------------------------------------------------
@@ -38,7 +34,7 @@ def _token(name: str, minutes: int = 30) -> Dict[str, str]:
 
 def test_constructor_rejects_token_and_credentials_together():
     with pytest.raises(ConfigurationError):
-        AsyncWattnetRawClient(token="t", email="e@example.com", password="p")
+        AsyncWattnetRawClient(token="t", client_id="id", client_secret="s")
 
 
 def test_constructor_requires_some_auth():
@@ -46,15 +42,15 @@ def test_constructor_requires_some_auth():
         AsyncWattnetRawClient()
 
 
-def test_constructor_requires_both_email_and_password():
+def test_constructor_requires_both_client_id_and_secret():
     with pytest.raises(ConfigurationError):
-        AsyncWattnetRawClient(email="e@example.com")
+        AsyncWattnetRawClient(client_id="id")
 
 
 def test_repr_hides_credentials():
-    client = AsyncWattnetRawClient(email="e@example.com", password="secret")
+    client = AsyncWattnetRawClient(client_id="id", client_secret="secret")
     assert "secret" not in repr(client)
-    assert "AsyncCredentialsTokenProvider" in repr(client)
+    assert "AsyncClientCredentialsTokenProvider" in repr(client)
 
 
 def test_async_client_does_not_import_pandas():
@@ -182,11 +178,11 @@ async def test_connection_error_raised_when_retries_exhausted(server, make_clien
 
 
 async def test_401_refreshes_token_once(server, make_client):
-    server.add("POST", "/token-request/get_token", json=_token("old"))
-    server.add("POST", "/token-request/get_token", json=_token("new"))
+    server.add("POST", "/token", json=_token("old"))
+    server.add("POST", "/token", json=_token("new"))
     server.add("GET", "/v1/status", status=401, json={"detail": "expired"})
     server.add("GET", "/v1/status", json={"status": "ok"})
-    async with make_client(email="e@x.com", password="p") as client:
+    async with make_client(client_id="id", client_secret="s") as client:
         assert await client.get_status() == {"status": "ok"}
     sent = [c.headers["Authorization"] for c in server.calls("GET", "/v1/status")]
     assert sent == ["Bearer old", "Bearer new"]
@@ -216,95 +212,88 @@ async def test_closes_owned_session(server, make_client):
 # -- auth -----------------------------------------------------------------
 
 
-async def test_credentials_provider_caches_token(server):
-    server.add("POST", "/token-request/get_token", json=_token("tok"))
-    async with aiohttp.ClientSession() as session:
-        provider = AsyncCredentialsTokenProvider(
-            "e@x.com", "p", server.token_url, session
-        )
-        assert await provider.get_token() == "tok"
-        assert await provider.get_token() == "tok"
-    assert len(server.calls("POST", "/token-request/get_token")) == 1
+def _provider(session, server, **kwargs):
+    kwargs.setdefault("token_url", server.token_url)
+    kwargs.setdefault("retry_delay", 0)
+    return AsyncClientCredentialsTokenProvider(
+        "id", "s3cret", f"{server.base_url}/issuer", session=session, **kwargs
+    )
 
 
-async def test_credentials_provider_refetches_after_expiry_and_invalidate(server):
-    server.add("POST", "/token-request/get_token", json=_token("a", minutes=0))
-    server.add("POST", "/token-request/get_token", json=_token("b"))
-    server.add("POST", "/token-request/get_token", json=_token("c"))
+async def test_provider_caches_token_and_sends_the_grant(server):
+    server.add("POST", "/token", json=_token("tok"))
     async with aiohttp.ClientSession() as session:
-        provider = AsyncCredentialsTokenProvider(
-            "e@x.com", "p", server.token_url, session
-        )
-        assert await provider.get_token() == "a"  # already inside safety margin
-        assert await provider.get_token() == "b"
+        provider = _provider(session, server)
+        assert await provider.get_token() == "tok"
+        assert await provider.get_token() == "tok"
+    calls = server.calls("POST", "/token")
+    assert len(calls) == 1
+    assert await calls[0].post() == {
+        "grant_type": "client_credentials",
+        "client_id": "id",
+        "client_secret": "s3cret",
+    }
+
+
+async def test_provider_discovers_token_endpoint(server):
+    server.add(
+        "GET",
+        "/v1/issuer/.well-known/openid-configuration",
+        json={"token_endpoint": server.token_url},
+    )
+    server.add("POST", "/token", json=_token("a"))
+    server.add("POST", "/token", json=_token("b"))
+    async with aiohttp.ClientSession() as session:
+        provider = _provider(session, server, token_url=None)
+        assert await provider.get_token() == "a"
         provider.invalidate()
-        assert await provider.get_token() == "c"
+        assert await provider.get_token() == "b"
+    assert len(server.calls("GET", "/v1/issuer/.well-known/openid-configuration")) == 1
 
 
-async def test_credentials_provider_parses_z_suffix(server):
-    server.add(
-        "POST",
-        "/token-request/get_token",
-        json={"access_token": "t", "expires_at": "2999-01-01T00:00:00.123456Z"},
-    )
+async def test_provider_renews_after_80_percent_of_the_lifetime(server, monkeypatch):
+    now = [1000.0]
+    monkeypatch.setattr("wattnet.client.async_auth.time.monotonic", lambda: now[0])
+    server.add("POST", "/token", json=_token("a", 3600))
+    server.add("POST", "/token", json=_token("b", 3600))
     async with aiohttp.ClientSession() as session:
-        provider = AsyncCredentialsTokenProvider(
-            "e@x.com", "p", server.token_url, session
-        )
-        assert await provider.get_token() == "t"
+        provider = _provider(session, server)
+        assert await provider.get_token() == "a"
+        now[0] += 2879
+        assert await provider.get_token() == "a"
+        now[0] += 2
+        assert await provider.get_token() == "b"
 
 
-async def test_credentials_provider_invalid_credentials(server):
+async def test_provider_invalid_credentials(server):
     server.add(
         "POST",
-        "/token-request/get_token",
+        "/token",
         status=401,
-        json={"detail": "bad credentials"},
+        json={"error": "invalid_client", "error_description": "Invalid secret"},
     )
     async with aiohttp.ClientSession() as session:
-        provider = AsyncCredentialsTokenProvider(
-            "e@x.com", "p", server.token_url, session
-        )
-        with pytest.raises(AuthenticationError, match="bad credentials"):
-            await provider.get_token()
+        with pytest.raises(AuthenticationError, match="Invalid secret"):
+            await _provider(session, server).get_token()
 
 
-async def test_credentials_provider_upstream_failure(server):
-    server.add(
-        "POST", "/token-request/get_token", status=502, json={"detail": "bad gw"}
-    )
+async def test_provider_upstream_failure(server):
+    server.add("POST", "/token", status=502, json={"detail": "bad gw"})
     async with aiohttp.ClientSession() as session:
-        provider = AsyncCredentialsTokenProvider(
-            "e@x.com", "p", server.token_url, session, retry_count=0
-        )
         with pytest.raises(WattnetAPIError) as exc:
-            await provider.get_token()
+            await _provider(session, server, retry_count=0).get_token()
     assert exc.value.status_code == 502
 
 
-async def test_credentials_provider_retries_connection_error(server):
-    server.drop("POST", "/token-request/get_token")
-    server.add("POST", "/token-request/get_token", json=_token("tok"))
+async def test_provider_retries_connection_error(server):
+    server.drop("POST", "/token")
+    server.add("POST", "/token", json=_token("tok"))
     async with aiohttp.ClientSession() as session:
-        provider = AsyncCredentialsTokenProvider(
-            "e@x.com", "p", server.token_url, session, retry_delay=0
-        )
-        assert await provider.get_token() == "tok"
+        assert await _provider(session, server).get_token() == "tok"
 
 
-async def test_async_register_returns_message(server):
-    server.add(
-        "POST",
-        "/token-request/register",
-        json={"message": "User registered successfully."},
-    )
-    message = await async_register("e@x.com", "p", token_url=server.token_url)
-    assert message == "User registered successfully."
-
-
-async def test_async_register_not_authorized(server):
-    server.add(
-        "POST", "/token-request/register", status=403, json={"detail": "not allowed"}
-    )
-    with pytest.raises(AuthenticationError, match="not allowed"):
-        await async_register("e@x.com", "p", token_url=server.token_url)
+async def test_provider_gives_up_on_connection_error_after_retries(server):
+    server.drop("POST", "/token")
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(aiohttp.ClientConnectionError):
+            await _provider(session, server, retry_count=0).get_token()

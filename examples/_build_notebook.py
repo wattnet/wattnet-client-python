@@ -32,7 +32,7 @@ needing your own credentials just to read it.
 
 To re-run this notebook yourself:
 
-1. Get a bearer token (a pre-issued one, or via `email`/`password` — see below).
+1. Get a bearer token (a pre-issued one, or via a credential's `client_id`/`client_secret` — see below).
 2. Set it as an environment variable, **never hardcode it in the notebook**:
 
    ```bash
@@ -49,12 +49,12 @@ client = WattnetClient(token=os.environ["WATTNET_TOKEN"])
 client""")
 
 md("""\
-Instead of a static token, you can also authenticate with an email/password pair
-already registered with the wattnet token-request service — the client fetches and
+Instead of a static token, you can also authenticate with the `client_id` and
+`client_secret` of a wattnet credential — the client fetches and
 caches a token for you (refreshing it automatically before it expires):
 
 ```python
-client = WattnetClient(email="you@example.com", password="<your-password>")
+client = WattnetClient(client_id="<your-client-id>", client_secret="<your-client-secret>")
 ```
 
 We'll use a fixed 6-hour window for every time-series call below, so the examples

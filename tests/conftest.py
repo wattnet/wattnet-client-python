@@ -5,7 +5,7 @@ import pytest
 from wattnet.client import WattnetClient, WattnetRawClient
 
 BASE_URL = "https://wattnet-api.test/v1"
-TOKEN_URL = "https://wattnet-api.test/token-request"
+TOKEN_URL = "https://auth.wattnet.test/token"
 TOKEN = "test-token"
 
 
