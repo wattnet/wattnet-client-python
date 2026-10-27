@@ -31,13 +31,13 @@ Thank you for your interest in contributing. This document covers how to set up 
 
 ## Running the Tests
 
-**Unit tests** (HTTP is mocked — no external services needed):
+**Unit tests** (HTTP is mocked, no external services needed):
 
 ```bash
 poetry run pytest tests/unit/
 ```
 
-**Integration tests** (hit a real, running `wattnet-api` instance — skipped automatically unless `WATTNET_TEST_BASE_URL` and `WATTNET_TEST_TOKEN` are set):
+**Integration tests** (hit a real, running `wattnet-api` instance, skipped automatically unless `WATTNET_TEST_BASE_URL` and `WATTNET_TEST_TOKEN` are set):
 
 ```bash
 export WATTNET_TEST_BASE_URL=http://localhost:8000/v1
