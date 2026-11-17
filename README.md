@@ -100,7 +100,7 @@ The answers are compressed by default (`compress=True`; gzip, and `br` or `zstd`
 
 ### Authentication
 
-A credential (`client_id` and `client_secret`) is created in the [developer portal](https://developer.wattnet.eu). The client exchanges it for a bearer token with the OAuth 2.0 `client_credentials` grant the first time it's needed, keeps the token in memory, and renews it once 80 % of its lifetime has passed (but never later than a minute before it expires). If the API still rejects the cached token as expired, the client refreshes it and retries the request once.
+A credential (`client_id` and `client_secret`) is created in the [developer portal](https://developers.wattnet.eu). The client exchanges it for a bearer token with the OAuth 2.0 `client_credentials` grant the first time it's needed, keeps the token in memory, and renews it once 80 % of its lifetime has passed (but never later than a minute before it expires). If the API still rejects the cached token as expired, the client refreshes it and retries the request once.
 
 ```python
 client = WattnetClient(
