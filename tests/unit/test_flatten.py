@@ -126,7 +126,8 @@ def test_explode_uses_the_points_of_a_series_and_adds_updated_at(
         "updated_at",
     ]
     assert df.iloc[0]["value"] == 150.0
-    assert str(df["updated_at"].dtype) == "datetime64[ns, UTC]"
+    assert isinstance(df["updated_at"].dtype, pd.DatetimeTZDtype)
+    assert str(df["updated_at"].dtype.tz) == "UTC"
     assert df.iloc[0]["updated_at"] == pd.Timestamp("2026-01-02T03:04:05", tz="UTC")
 
 
@@ -154,7 +155,8 @@ def test_explode_parses_the_updated_at_of_an_aggregate(footprints_aggregate_payl
 
     df = flatten.explode(footprints_aggregate_payload)
 
-    assert str(df["updated_at"].dtype) == "datetime64[ns, UTC]"
+    assert isinstance(df["updated_at"].dtype, pd.DatetimeTZDtype)
+    assert str(df["updated_at"].dtype.tz) == "UTC"
 
 
 def test_explode_does_not_keep_the_values_list_as_a_column(
