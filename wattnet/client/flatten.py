@@ -4,7 +4,7 @@ Every zone-scoped, non-aggregate endpoint follows the same shape: a record
 per zone, holding a list of `series` (one version per `valid`/`zone_status`
 combination), each optionally holding a list of `block`s grouped by some
 category (production type, counterpart zone, ...), each holding a list of
-`(timestamp, value)` tuples. Aggregate responses and flat listings (zones,
+points. Aggregate responses and flat listings (zones,
 status) have no `series` and pass through as a single row per record.
 
 Column order is a guaranteed contract, not incidental: it always follows the
@@ -16,6 +16,11 @@ their fields in declaration order, and Python dict merges (`{**a, **b}`)
 preserve that order — so as long as each endpoint's field order doesn't
 change API-side, the resulting DataFrame's column order won't change either.
 The tests in `tests/unit/test_flatten.py` pin this down per payload shape.
+
+Every series or block holds its data as `points`, objects with `timestamp`,
+`value` and `updated_at` (the moment that version of the value was stored). The
+API's older `values` (`[timestamp, value]` pairs) is not read: the client needs
+an API that sends `points`.
 
 A resulting `timestamp` column is always parsed to a tz-aware (UTC)
 `datetime64` dtype rather than left as the API's raw ISO 8601
@@ -31,7 +36,7 @@ def explode(
     records: List[Dict[str, Any]],
     series_key: Optional[str] = "series",
     block_key: Optional[str] = None,
-    value_key: str = "values",
+    value_key: str = "points",
 ) -> pd.DataFrame:
     """Flatten a list of wattnet-api records into a DataFrame.
 
@@ -40,7 +45,8 @@ def explode(
         lacking this key (aggregates, zones) are treated as already flat.
     :param block_key: Key holding a nested list of category blocks within
         each series, or None if series expose `value_key` directly.
-    :param value_key: Key holding the list of `(timestamp, value)` tuples.
+    :param value_key: Key holding the list of points (objects with `timestamp`,
+        `value` and `updated_at`).
     """
     rows: List[Dict[str, Any]] = []
     for record in records:
@@ -54,6 +60,8 @@ def explode(
     df = pd.DataFrame(rows)
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+    if "updated_at" in df.columns:
+        df["updated_at"] = pd.to_datetime(df["updated_at"], utc=True)
     return df
 
 
@@ -63,11 +71,12 @@ def _explode_series(
     block_key: Optional[str],
     value_key: str,
 ) -> List[Dict[str, Any]]:
+    leaf_keys = {value_key, "values"}
     blocks = series_item.get(block_key) if block_key else None
     if blocks is None:
         series_base = {
             **base,
-            **{k: v for k, v in series_item.items() if k != value_key},
+            **{k: v for k, v in series_item.items() if k not in leaf_keys},
         }
         return _explode_values(series_base, series_item[value_key])
 
@@ -79,13 +88,13 @@ def _explode_series(
     for block in blocks:
         block_base = {
             **series_base,
-            **{k: v for k, v in block.items() if k != value_key},
+            **{k: v for k, v in block.items() if k not in leaf_keys},
         }
         rows.extend(_explode_values(block_base, block[value_key]))
     return rows
 
 
-def _explode_values(base: Dict[str, Any], values: List[Any]) -> List[Dict[str, Any]]:
-    return [
-        {**base, "timestamp": timestamp, "value": value} for timestamp, value in values
-    ]
+def _explode_values(
+    base: Dict[str, Any], points: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    return [{**base, **point} for point in points]

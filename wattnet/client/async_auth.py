@@ -55,18 +55,28 @@ class AsyncStaticTokenProvider:
         """No-op: a static token cannot be refreshed by this client."""
 
 
-async def response_detail(response: aiohttp.ClientResponse) -> Optional[str]:
-    """Best-effort extraction of the error message from an error response.
+async def response_error(
+    response: aiohttp.ClientResponse,
+) -> "tuple[Optional[str], Optional[str]]":
+    """Best-effort extraction of the message and the stable code of an error response.
 
-    Reads `detail` (wattnet API) or `error_description` (OAuth 2.0 token endpoint).
+    Reads `detail` (wattnet API) or `error_description` (OAuth 2.0 token endpoint),
+    and the `code` that the wattnet API adds to its errors.
     """
     try:
         body = await response.json(content_type=None)
         detail = body.get("detail") or body.get("error_description")
+        code = body.get("code")
     except (ValueError, AttributeError, aiohttp.ClientError):
         text = await response.text()
-        return text or None
-    return detail if isinstance(detail, str) or detail is None else str(detail)
+        return text or None, None
+    detail = detail if isinstance(detail, str) or detail is None else str(detail)
+    return detail, code if isinstance(code, str) else None
+
+
+async def response_detail(response: aiohttp.ClientResponse) -> Optional[str]:
+    """Best-effort extraction of the error message from an error response."""
+    return (await response_error(response))[0]
 
 
 async def _raise_for_status(response: aiohttp.ClientResponse) -> None:

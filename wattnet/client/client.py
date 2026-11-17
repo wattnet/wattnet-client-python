@@ -16,6 +16,7 @@ from wattnet.client.enums import (
     FootprintType,
     ImpactType,
     ProductionType,
+    Resolution,
     Scope,
     Zone,
 )
@@ -49,6 +50,7 @@ class WattnetClient(WattnetRawClient):
         production_type: Optional[ProductionType] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> pd.DataFrame:
         """Electricity generation by production type for a zone or coordinate."""
         return super().get_generation(
@@ -58,6 +60,7 @@ class WattnetClient(WattnetRawClient):
             production_type=production_type,
             start=start,
             end=end,
+            resolution=resolution,
         )
 
     @dataframe(block="blocks")
@@ -68,9 +71,17 @@ class WattnetClient(WattnetRawClient):
         lon: Optional[float] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> pd.DataFrame:
         """Total electricity demand for a zone or coordinate."""
-        return super().get_load(zone=zone, lat=lat, lon=lon, start=start, end=end)
+        return super().get_load(
+            zone=zone,
+            lat=lat,
+            lon=lon,
+            start=start,
+            end=end,
+            resolution=resolution,
+        )
 
     @dataframe(block="imports")
     def get_imports(
@@ -83,6 +94,7 @@ class WattnetClient(WattnetRawClient):
         source_lon: Optional[float] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> pd.DataFrame:
         """Electricity imports into a zone, optionally filtered by origin zone."""
         return super().get_imports(
@@ -94,6 +106,7 @@ class WattnetClient(WattnetRawClient):
             source_lon=source_lon,
             start=start,
             end=end,
+            resolution=resolution,
         )
 
     @dataframe(block="exports")
@@ -107,6 +120,7 @@ class WattnetClient(WattnetRawClient):
         destination_lon: Optional[float] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> pd.DataFrame:
         """Electricity exports from a zone, optionally filtered by destination."""
         return super().get_exports(
@@ -118,6 +132,7 @@ class WattnetClient(WattnetRawClient):
             destination_lon=destination_lon,
             start=start,
             end=end,
+            resolution=resolution,
         )
 
     @dataframe(block="production")
@@ -129,6 +144,7 @@ class WattnetClient(WattnetRawClient):
         production_type: Optional[ProductionType] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> pd.DataFrame:
         """Return the flow-traced generation mix by production type for a zone."""
         return super().get_mix(
@@ -138,6 +154,7 @@ class WattnetClient(WattnetRawClient):
             production_type=production_type,
             start=start,
             end=end,
+            resolution=resolution,
         )
 
     # -- environmental metrics -----------------------------------------
@@ -154,6 +171,7 @@ class WattnetClient(WattnetRawClient):
         end: Optional[datetime] = None,
         aggregate: bool = False,
         use_global: bool = True,
+        resolution: Optional[Resolution] = None,
     ) -> pd.DataFrame:
         """Carbon/water footprint of electricity consumption in a zone.
 
@@ -170,6 +188,7 @@ class WattnetClient(WattnetRawClient):
             end=end,
             aggregate=aggregate,
             use_global=use_global,
+            resolution=resolution,
         )
 
     @dataframe()
@@ -184,6 +203,7 @@ class WattnetClient(WattnetRawClient):
         end: Optional[datetime] = None,
         aggregate: bool = False,
         use_global: bool = True,
+        resolution: Optional[Resolution] = None,
     ) -> pd.DataFrame:
         """Water impact of electricity consumption in a zone."""
         return super().get_impacts(
@@ -196,6 +216,7 @@ class WattnetClient(WattnetRawClient):
             end=end,
             aggregate=aggregate,
             use_global=use_global,
+            resolution=resolution,
         )
 
     @dataframe()
@@ -209,6 +230,7 @@ class WattnetClient(WattnetRawClient):
         end: Optional[datetime] = None,
         aggregate: bool = False,
         use_global: bool = True,
+        resolution: Optional[Resolution] = None,
     ) -> pd.DataFrame:
         """Return the EnvironmentalScore (0-100) of electricity use in a zone."""
         return super().get_environmental_score(
@@ -220,6 +242,7 @@ class WattnetClient(WattnetRawClient):
             end=end,
             aggregate=aggregate,
             use_global=use_global,
+            resolution=resolution,
         )
 
     # -- shares metrics --------------------------------------------------

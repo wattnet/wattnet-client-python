@@ -20,13 +20,14 @@ from wattnet.client.async_auth import (
     AsyncClientCredentialsTokenProvider,
     AsyncStaticTokenProvider,
     AsyncTokenProvider,
-    response_detail,
+    response_error,
 )
 from wattnet.client.enums import (
     FactorType,
     FootprintType,
     ImpactType,
     ProductionType,
+    Resolution,
     Scope,
     Zone,
 )
@@ -73,14 +74,21 @@ class AsyncWattnetRawClient:
         timeout: float = DEFAULT_TIMEOUT,
         retry_count: int = DEFAULT_RETRY_COUNT,
         retry_delay: float = DEFAULT_RETRY_DELAY,
+        compress: bool = True,
     ) -> None:
-        """Configure auth and transport; see the class docstring for usage."""
+        """Configure auth and transport; see the class docstring for usage.
+
+        :param compress: Ask the API for compressed answers (gzip, and br or zstd
+            when their packages are installed), which are several times smaller
+            and are decompressed transparently. `False` asks for none.
+        """
         self._base_url = base_url.rstrip("/")
         self._session = session
         self._owns_session = session is None
         self._timeout = timeout
         self._retry_count = retry_count
         self._retry_delay = retry_delay
+        self._compress = compress
         self._auth: AsyncTokenProvider = _build_auth(
             token,
             client_id,
@@ -168,7 +176,7 @@ class AsyncWattnetRawClient:
         async with session.get(
             f"{self._base_url}{path}",
             params=params,
-            headers={"Authorization": f"Bearer {token}"},
+            headers=_headers(token, self._compress),
             timeout=aiohttp.ClientTimeout(total=self._timeout),
         ) as response:
             if response.status < 400:
@@ -177,7 +185,8 @@ class AsyncWattnetRawClient:
                     response.headers,
                     await response.json(content_type=None),
                 )
-            return response.status, response.headers, await response_detail(response)
+            detail, code = await response_error(response)
+            return response.status, response.headers, {"detail": detail, "code": code}
 
     # -- zones ---------------------------------------------------------------
 
@@ -198,6 +207,7 @@ class AsyncWattnetRawClient:
         production_type: Optional[ProductionType] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Electricity generation by production type for a zone or coordinate."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -210,6 +220,7 @@ class AsyncWattnetRawClient:
         lon: Optional[float] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Total electricity demand for a zone or coordinate."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -225,6 +236,7 @@ class AsyncWattnetRawClient:
         source_lon: Optional[float] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Electricity imports into a zone, optionally filtered by origin zone."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -240,6 +252,7 @@ class AsyncWattnetRawClient:
         destination_lon: Optional[float] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Electricity exports from a zone, optionally filtered by destination."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -253,6 +266,7 @@ class AsyncWattnetRawClient:
         production_type: Optional[ProductionType] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Return the flow-traced generation mix by production type for a zone."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -271,6 +285,7 @@ class AsyncWattnetRawClient:
         end: Optional[datetime] = None,
         aggregate: bool = False,
         use_global: bool = True,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Carbon/water footprint of electricity consumption in a zone.
 
@@ -291,6 +306,7 @@ class AsyncWattnetRawClient:
         end: Optional[datetime] = None,
         aggregate: bool = False,
         use_global: bool = True,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Water impact of electricity consumption in a zone."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -306,6 +322,7 @@ class AsyncWattnetRawClient:
         end: Optional[datetime] = None,
         aggregate: bool = False,
         use_global: bool = True,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Return the EnvironmentalScore (0-100) of electricity use in a zone."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -456,11 +473,21 @@ def _build_auth(
     )
 
 
+def _headers(token: str, compress: bool) -> Dict[str, str]:
+    """Headers of a request; without compression the answer is asked as it is."""
+    headers = {"Authorization": f"Bearer {token}"}
+    if not compress:
+        headers["Accept-Encoding"] = "identity"
+    return headers
+
+
 def _parse_response(status: int, body: Any) -> Any:
     if status < 400:
         return body
+    detail, code = body["detail"], body["code"]
     raise WattnetAPIError(
-        f"wattnet API request failed ({status}): {body}",
+        f"wattnet API request failed ({status}): {detail}",
         status_code=status,
-        detail=body,
+        detail=detail,
+        code=code,
     )

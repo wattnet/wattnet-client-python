@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 import requests
 
 from wattnet.client import decorators
-from wattnet.client._util import error_detail, parse_retry_after
+from wattnet.client._util import error_code, error_detail, parse_retry_after
 from wattnet.client.auth import (
     ClientCredentialsTokenProvider,
     StaticTokenProvider,
@@ -24,6 +24,7 @@ from wattnet.client.enums import (
     FootprintType,
     ImpactType,
     ProductionType,
+    Resolution,
     Scope,
     Zone,
 )
@@ -66,13 +67,20 @@ class WattnetRawClient:
         timeout: float = DEFAULT_TIMEOUT,
         retry_count: int = DEFAULT_RETRY_COUNT,
         retry_delay: float = DEFAULT_RETRY_DELAY,
+        compress: bool = True,
     ) -> None:
-        """Configure auth and transport; see the class docstring for usage."""
+        """Configure auth and transport; see the class docstring for usage.
+
+        :param compress: Ask the API for compressed answers (gzip, and br or zstd
+            when their packages are installed), which are several times smaller
+            and are decompressed transparently. `False` asks for none.
+        """
         self._base_url = base_url.rstrip("/")
         self._session = session or requests.Session()
         self._timeout = timeout
         self._retry_count = retry_count
         self._retry_delay = retry_delay
+        self._compress = compress
         self._auth: TokenProvider = _build_auth(
             token,
             client_id,
@@ -143,7 +151,7 @@ class WattnetRawClient:
         return self._session.get(
             f"{self._base_url}{path}",
             params=params,
-            headers={"Authorization": f"Bearer {self._auth.get_token()}"},
+            headers=_headers(self._auth.get_token(), self._compress),
             timeout=self._timeout,
         )
 
@@ -166,6 +174,7 @@ class WattnetRawClient:
         production_type: Optional[ProductionType] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Electricity generation by production type for a zone or coordinate."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -178,6 +187,7 @@ class WattnetRawClient:
         lon: Optional[float] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Total electricity demand for a zone or coordinate."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -193,6 +203,7 @@ class WattnetRawClient:
         source_lon: Optional[float] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Electricity imports into a zone, optionally filtered by origin zone."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -208,6 +219,7 @@ class WattnetRawClient:
         destination_lon: Optional[float] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Electricity exports from a zone, optionally filtered by destination."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -221,6 +233,7 @@ class WattnetRawClient:
         production_type: Optional[ProductionType] = None,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Return the flow-traced generation mix by production type for a zone."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -239,6 +252,7 @@ class WattnetRawClient:
         end: Optional[datetime] = None,
         aggregate: bool = False,
         use_global: bool = True,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Carbon/water footprint of electricity consumption in a zone.
 
@@ -259,6 +273,7 @@ class WattnetRawClient:
         end: Optional[datetime] = None,
         aggregate: bool = False,
         use_global: bool = True,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Water impact of electricity consumption in a zone."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -274,6 +289,7 @@ class WattnetRawClient:
         end: Optional[datetime] = None,
         aggregate: bool = False,
         use_global: bool = True,
+        resolution: Optional[Resolution] = None,
     ) -> List[Dict[str, Any]]:
         """Return the EnvironmentalScore (0-100) of electricity use in a zone."""
         raise NotImplementedError  # pragma: no cover - replaced by @decorators.get
@@ -424,6 +440,14 @@ def _build_auth(
     )
 
 
+def _headers(token: str, compress: bool) -> Dict[str, str]:
+    """Headers of a request; without compression the answer is asked as it is."""
+    headers = {"Authorization": f"Bearer {token}"}
+    if not compress:
+        headers["Accept-Encoding"] = "identity"
+    return headers
+
+
 def _retry_delay_for(response: requests.Response, default: float) -> float:
     """Seconds to wait before retrying, honoring a numeric `Retry-After`."""
     return parse_retry_after(response.headers.get("Retry-After"), default)
@@ -437,4 +461,5 @@ def _parse_response(response: requests.Response) -> Any:
         f"wattnet API request failed ({response.status_code}): {detail}",
         status_code=response.status_code,
         detail=detail,
+        code=error_code(response),
     )

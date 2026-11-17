@@ -108,3 +108,7 @@ FootprintType = Literal["carbon", "water"]
 FactorType = Literal["carbon", "water"]
 ImpactType = Literal["water"]
 Scope = Literal["operational", "life-cycle"]
+
+#: Resolution of a series: `15m` is the data as it is, `1h` and `1d` average each
+#: hour or day (UTC). Only the series endpoints take it.
+Resolution = Literal["15m", "1h", "1d"]

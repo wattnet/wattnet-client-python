@@ -216,7 +216,7 @@ def _frame(
 def dataframe(
     series: Optional[str] = "series",
     block: Optional[str] = None,
-    value_key: str = "values",
+    value_key: str = "points",
     record: bool = False,
 ) -> Callable[[F], F]:
     """Flatten the JSON returned by the wrapped method into a DataFrame.
@@ -228,7 +228,7 @@ def dataframe(
     :param series: Key holding the list of per-status series, or None if the
         payload is already a flat list of records (e.g. zones, aggregates).
     :param block: Key holding a nested list of category blocks within each
-        series, or None if series entries expose `values` directly.
+        series, or None if series entries expose `points` directly.
     :param record: Set for endpoints returning a single JSON object (e.g.
         status checks) rather than a list — wraps it as a one-row DataFrame.
     """
@@ -247,7 +247,7 @@ def dataframe(
 def adataframe(
     series: Optional[str] = "series",
     block: Optional[str] = None,
-    value_key: str = "values",
+    value_key: str = "points",
     record: bool = False,
 ) -> Callable[[F], F]:
     """Async counterpart of `dataframe`, for coroutine methods.

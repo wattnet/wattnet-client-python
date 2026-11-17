@@ -169,9 +169,17 @@ class _FakePandasEndpoint:
                         "items": [
                             {
                                 "kind": "a",
-                                "values": [
-                                    ["2026-01-01T00:00:00Z", 1],
-                                    ["2026-01-01T01:00:00Z", 2],
+                                "points": [
+                                    {
+                                        "timestamp": "2026-01-01T00:00:00Z",
+                                        "value": 1,
+                                        "updated_at": "2026-01-02T03:04:05+00:00",
+                                    },
+                                    {
+                                        "timestamp": "2026-01-01T01:00:00Z",
+                                        "value": 2,
+                                        "updated_at": "2026-01-02T03:04:05+00:00",
+                                    },
                                 ],
                             }
                         ],

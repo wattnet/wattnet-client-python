@@ -37,18 +37,34 @@ def generation_payload():
                             "production_type": "solar",
                             "data_state": "official",
                             "datasource": "ENTSO-E",
-                            "values": [
-                                ["2026-01-01T00:00:00+00:00", 100.0],
-                                ["2026-01-01T01:00:00+00:00", 110.0],
+                            "points": [
+                                {
+                                    "timestamp": "2026-01-01T00:00:00+00:00",
+                                    "value": 100.0,
+                                    "updated_at": "2026-01-02T03:04:05+00:00",
+                                },
+                                {
+                                    "timestamp": "2026-01-01T01:00:00+00:00",
+                                    "value": 110.0,
+                                    "updated_at": "2026-01-02T03:04:05+00:00",
+                                },
                             ],
                         },
                         {
                             "production_type": "wind_onshore",
                             "data_state": "official",
                             "datasource": "ENTSO-E",
-                            "values": [
-                                ["2026-01-01T00:00:00+00:00", 200.0],
-                                ["2026-01-01T01:00:00+00:00", 190.0],
+                            "points": [
+                                {
+                                    "timestamp": "2026-01-01T00:00:00+00:00",
+                                    "value": 200.0,
+                                    "updated_at": "2026-01-02T03:04:05+00:00",
+                                },
+                                {
+                                    "timestamp": "2026-01-01T01:00:00+00:00",
+                                    "value": 190.0,
+                                    "updated_at": "2026-01-02T03:04:05+00:00",
+                                },
                             ],
                         },
                     ],
@@ -72,9 +88,17 @@ def footprints_payload():
                 {
                     "valid": True,
                     "zone_status": "complete",
-                    "values": [
-                        ["2026-01-01T00:00:00+00:00", 150.0],
-                        ["2026-01-01T01:00:00+00:00", 145.0],
+                    "points": [
+                        {
+                            "timestamp": "2026-01-01T00:00:00+00:00",
+                            "value": 150.0,
+                            "updated_at": "2026-01-02T03:04:05+00:00",
+                        },
+                        {
+                            "timestamp": "2026-01-01T01:00:00+00:00",
+                            "value": 145.0,
+                            "updated_at": "2026-01-02T03:04:05+00:00",
+                        },
                     ],
                 }
             ],
