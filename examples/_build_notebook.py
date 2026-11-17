@@ -116,6 +116,16 @@ code("""\
 hourly = load.set_index("timestamp").resample("1h").mean(numeric_only=True)
 hourly""")
 
+md(
+    "Every row also carries `updated_at`, the moment that version of the value was "
+    "stored. For long ranges the API can do the averaging itself: `resolution` "
+    '(`"15m"`, `"1h"` or `"1d"`, buckets in UTC) returns far fewer rows:'
+)
+code("""\
+daily = client.get_load(zone=ZONE, start="2026-07-01", end="2026-07-15", resolution="1d")
+print(daily.shape)
+daily.head()""")
+
 md("### Imports\n\n`get_imports()` — electricity imported into the zone, by origin.")
 code("""\
 imports = client.get_imports(zone=ZONE, start=START, end=END)
@@ -249,8 +259,8 @@ except ConfigurationError as exc:
 
 md(
     "Errors coming back from the API itself raise `WattnetAPIError`, which carries "
-    "the HTTP `status_code` and the API's own `detail` message so you can branch on "
-    "them instead of parsing strings. Here, a coordinate in the middle of the "
+    "the HTTP `status_code`, the API's own `detail` message and a stable `code` so "
+    "you can branch on them instead of parsing strings. Here, a coordinate in the middle of the "
     "Atlantic resolves to no zone at all:"
 )
 code("""\
@@ -260,7 +270,8 @@ try:
     client.get_load(lat=0.0, lon=-30.0, start=START, end=END)
 except WattnetAPIError as exc:
     print(f"status_code: {exc.status_code}")
-    print(f"detail:      {exc.detail}")""")
+    print(f"detail:      {exc.detail}")
+    print(f"code:        {exc.code}")""")
 
 md(
     "Note that an *unrecognised zone code* is **not** an error: the API does not "

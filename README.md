@@ -84,6 +84,20 @@ Every time-series `DataFrame` has a `timestamp` column parsed as a tz-aware
 conversion. Omit `zone` (and other filter params) to get every zone back in
 a single call instead of querying one at a time.
 
+### Updated at and long ranges
+
+Every time-series `DataFrame` has `timestamp`, `value` and `updated_at`, the moment that version of the value was stored (tz-aware, UTC).
+
+A year at 15 minutes is a lot of rows. The series endpoints (`get_generation`, `get_load`, `get_imports`, `get_exports`, `get_mix`, `get_footprints`, `get_impacts` and `get_environmental_score`) take `resolution="1h"` or `"1d"` to get each hour or day (UTC) averaged by the API: far fewer rows and bytes, and faster.
+
+```python
+df = client.get_generation(
+    zone="ES", start="2026-01-01", end="2026-11-01", resolution="1d"
+)
+```
+
+The answers are compressed by default (`compress=True`; gzip, and `br` or `zstd` if their packages are installed) and decompressed for you. `WattnetClient(..., compress=False)` asks for none.
+
 ### Authentication
 
 A credential (`client_id` and `client_secret`) is created in the [developer portal](https://developer.wattnet.eu). The client exchanges it for a bearer token with the OAuth 2.0 `client_credentials` grant the first time it's needed, keeps the token in memory, and renews it once 80 % of its lifetime has passed (but never later than a minute before it expires). If the API still rejects the cached token as expired, the client refreshes it and retries the request once.
@@ -167,7 +181,7 @@ Every method's parameters mirror the corresponding API endpoint's query paramete
 | `issuer_url`          | `WATTNET_ISSUER_URL`       | `https://auth.wattnet.eu/realms/wattnet`  |
 | `token_url`           | `WATTNET_TOKEN_URL`        | read from the issuer's discovery document |
 
-Other constructor options: `session` (bring your own `requests.Session`), `timeout`, `retry_count`, `retry_delay`.
+Other constructor options: `session` (bring your own `requests.Session`), `timeout`, `retry_count`, `retry_delay` and `compress` (default `True`: ask the API for compressed answers).
 
 Requests are retried up to `retry_count` times (default 3, waiting `retry_delay` seconds between attempts) on connection/timeout errors and on `429`/`5xx` responses, a `429` waits for the `Retry-After` value the API sends instead of the fixed delay, when present. A `401` always triggers one token refresh + retry, independent of `retry_count`.
 
@@ -187,7 +201,7 @@ All errors raised by this library derive from `wattnet.client.WattnetError`:
 
 - `ConfigurationError`: the client was instantiated with invalid/incomplete auth arguments.
 - `AuthenticationError`: invalid token or credentials.
-- `WattnetAPIError`: the API returned a non-2xx response; carries `.status_code` and `.detail`.
+- `WattnetAPIError`: the API returned a non-2xx response; carries `.status_code`, `.detail` (a sentence for a person) and `.code` (a stable identifier for a program, such as `invalid_resolution`, or `None` if the server sends none).
 
 ## Contributing
 

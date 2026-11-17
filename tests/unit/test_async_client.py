@@ -164,6 +164,9 @@ async def test_429_honours_retry_after(server, make_client, monkeypatch):
 
 
 async def test_retries_connection_errors(server, make_client):
+    # aiohttp itself replays a request once when a connection drops, so two drops
+    # are needed for the error to reach the client's own retry.
+    server.drop("GET", "/v1/status")
     server.drop("GET", "/v1/status")
     server.add("GET", "/v1/status", json={"status": "ok"})
     async with make_client() as client:
@@ -297,3 +300,42 @@ async def test_provider_gives_up_on_connection_error_after_retries(server):
     async with aiohttp.ClientSession() as session:
         with pytest.raises(aiohttp.ClientConnectionError):
             await _provider(session, server, retry_count=0).get_token()
+
+
+async def test_resolution_is_sent_only_when_given(server, make_client):
+    server.add("GET", "/v1/load", json=[])
+    async with make_client() as client:
+        await client.get_load(zone="ES")
+        await client.get_load(zone="ES", resolution="1h")
+    first, second = server.calls("GET", "/v1/load")
+    assert "resolution" not in first.query
+    assert second.query["resolution"] == "1h"
+
+
+async def test_answers_are_asked_compressed_unless_told_otherwise(server, make_client):
+    server.add("GET", "/v1/load", json=[])
+    async with make_client() as client:
+        await client.get_load()
+    async with make_client(compress=False) as client:
+        await client.get_load()
+    default, plain = server.calls("GET", "/v1/load")
+    assert "gzip" in default.headers["Accept-Encoding"]
+    assert plain.headers["Accept-Encoding"] == "identity"
+
+
+async def test_api_error_carries_the_stable_code(server, make_client):
+    server.add(
+        "GET",
+        "/v1/load",
+        status=400,
+        json={"detail": "Invalid resolution '7m'.", "code": "invalid_resolution"},
+    )
+    server.add("GET", "/v1/zones", status=400, json={"detail": "nope"})
+    async with make_client() as client:
+        with pytest.raises(WattnetAPIError) as exc:
+            await client.get_load(resolution="7m")
+        assert exc.value.code == "invalid_resolution"
+        assert exc.value.detail == "Invalid resolution '7m'."
+        with pytest.raises(WattnetAPIError) as exc:
+            await client.get_zones()
+        assert exc.value.code is None

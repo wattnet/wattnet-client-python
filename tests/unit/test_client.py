@@ -288,9 +288,25 @@ def test_raw_client_caches_get_factors_per_argument_combination(raw_client):
 def _series_payload(block_key=None):
     series_item = {"valid": True, "zone_status": "complete"}
     if block_key:
-        series_item[block_key] = [{"values": [["2026-01-01T00:00:00Z", 1.0]]}]
+        series_item[block_key] = [
+            {
+                "points": [
+                    {
+                        "timestamp": "2026-01-01T00:00:00Z",
+                        "value": 1.0,
+                        "updated_at": "2026-01-02T03:04:05+00:00",
+                    }
+                ]
+            }
+        ]
     else:
-        series_item["values"] = [["2026-01-01T00:00:00Z", 1.0]]
+        series_item["points"] = [
+            {
+                "timestamp": "2026-01-01T00:00:00Z",
+                "value": 1.0,
+                "updated_at": "2026-01-02T03:04:05+00:00",
+            }
+        ]
     return [{"zone": "ES", "series": [series_item]}]
 
 
@@ -372,3 +388,98 @@ def test_context_manager_closes_session_on_exit():
         assert closed == []
 
     assert closed == [True]
+
+
+@responses.activate
+def test_resolution_is_sent_only_when_given(raw_client):
+    responses.add(responses.GET, f"{BASE_URL}/load", json=[], status=200)
+
+    raw_client.get_load(zone="ES")
+    raw_client.get_load(zone="ES", resolution="1h")
+
+    assert "resolution" not in responses.calls[0].request.url
+    assert "resolution=1h" in responses.calls[1].request.url
+
+
+@responses.activate
+def test_every_series_method_takes_a_resolution(client):
+    for path in (
+        "generation",
+        "load",
+        "imports",
+        "exports",
+        "mix",
+        "footprints",
+        "impacts",
+        "environmental-score",
+    ):
+        responses.add(responses.GET, f"{BASE_URL}/{path}", json=[], status=200)
+    for method in (
+        client.get_generation,
+        client.get_load,
+        client.get_imports,
+        client.get_exports,
+        client.get_mix,
+        client.get_footprints,
+        client.get_impacts,
+        client.get_environmental_score,
+    ):
+        method(zone="ES", resolution="1d")
+
+    assert len(responses.calls) == 8
+    assert all("resolution=1d" in call.request.url for call in responses.calls)
+
+
+@responses.activate
+def test_dataframe_client_reads_points_and_has_updated_at(client, generation_payload):
+    responses.add(responses.GET, f"{BASE_URL}/generation", json=generation_payload)
+
+    df = client.get_generation(zone="ES")
+
+    assert list(df.columns)[-3:] == ["timestamp", "value", "updated_at"]
+
+
+@responses.activate
+def test_answers_are_asked_compressed_unless_told_otherwise(raw_client):
+    responses.add(responses.GET, f"{BASE_URL}/zones", json=[], status=200)
+    plain = WattnetRawClient(
+        token=TOKEN, base_url=BASE_URL, token_url=TOKEN_URL, compress=False
+    )
+    responses.add(responses.GET, f"{BASE_URL}/load", json=[], status=200)
+
+    raw_client.get_zones()
+    plain.get_load()
+
+    assert "gzip" in responses.calls[0].request.headers["Accept-Encoding"]
+    assert responses.calls[1].request.headers["Accept-Encoding"] == "identity"
+
+
+@responses.activate
+def test_api_error_carries_the_stable_code(raw_client):
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/load",
+        json={"detail": "Invalid resolution '7m'.", "code": "invalid_resolution"},
+        status=400,
+    )
+
+    with pytest.raises(WattnetAPIError) as exc:
+        raw_client.get_load(resolution="7m")
+
+    assert exc.value.code == "invalid_resolution"
+    assert exc.value.detail == "Invalid resolution '7m'."
+
+
+@responses.activate
+def test_api_error_without_a_code_has_none(raw_client):
+    responses.add(
+        responses.GET, f"{BASE_URL}/load", json={"detail": "nope"}, status=400
+    )
+    responses.add(responses.GET, f"{BASE_URL}/zones", body="oops", status=400)
+
+    with pytest.raises(WattnetAPIError) as exc:
+        raw_client.get_load()
+    assert exc.value.code is None
+    with pytest.raises(WattnetAPIError) as exc:
+        raw_client.get_zones()
+    assert exc.value.code is None

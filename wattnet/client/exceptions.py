@@ -20,12 +20,20 @@ class WattnetAPIError(WattnetError):
 
     :ivar status_code: HTTP status code returned by the API.
     :ivar detail: The `detail` message from the API's JSON error body, if any.
+    :ivar code: The stable `code` of the error from the API's JSON error body, if
+        any (for example `invalid_resolution`). Read the code in a program and show
+        the detail to a person: the sentence can change, the code does not.
     """
 
     def __init__(
-        self, message: str, status_code: int, detail: Optional[str] = None
+        self,
+        message: str,
+        status_code: int,
+        detail: Optional[str] = None,
+        code: Optional[str] = None,
     ) -> None:
-        """Store the error message alongside the HTTP status code and detail."""
-        super().__init__(message, status_code, detail)
+        """Store the error message alongside the HTTP status code, detail and code."""
+        super().__init__(message, status_code, detail, code)
         self.status_code = status_code
         self.detail = detail
+        self.code = code

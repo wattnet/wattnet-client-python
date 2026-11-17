@@ -10,9 +10,25 @@ from wattnet.client.exceptions import WattnetAPIError
 def _series_payload(block_key=None):
     series_item = {"valid": True, "zone_status": "complete"}
     if block_key:
-        series_item[block_key] = [{"values": [["2026-01-01T00:00:00Z", 1.0]]}]
+        series_item[block_key] = [
+            {
+                "points": [
+                    {
+                        "timestamp": "2026-01-01T00:00:00Z",
+                        "value": 1.0,
+                        "updated_at": "2026-01-02T03:04:05+00:00",
+                    }
+                ]
+            }
+        ]
     else:
-        series_item["values"] = [["2026-01-01T00:00:00Z", 1.0]]
+        series_item["points"] = [
+            {
+                "timestamp": "2026-01-01T00:00:00Z",
+                "value": 1.0,
+                "updated_at": "2026-01-02T03:04:05+00:00",
+            }
+        ]
     return [{"zone": "ES", "series": [series_item]}]
 
 
@@ -44,7 +60,13 @@ async def test_get_generation_returns_dataframe(server, make_df_client):
                             "production_type": "solar",
                             "data_state": "official",
                             "datasource": "ENTSO-E",
-                            "values": [["2026-01-01T00:00:00Z", 12.5]],
+                            "points": [
+                                {
+                                    "timestamp": "2026-01-01T00:00:00Z",
+                                    "value": 12.5,
+                                    "updated_at": "2026-01-02T03:04:05+00:00",
+                                }
+                            ],
                         }
                     ],
                 }

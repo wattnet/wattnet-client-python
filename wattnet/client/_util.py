@@ -16,6 +16,15 @@ def error_detail(response: Any) -> Optional[str]:
     return cast(Optional[str], detail)
 
 
+def error_code(response: Any) -> Optional[str]:
+    """Best-effort extraction of the stable `code` of an error response, if any."""
+    try:
+        code = response.json().get("code")
+    except (ValueError, AttributeError):
+        return None
+    return code if isinstance(code, str) else None
+
+
 def parse_retry_after(value: Optional[str], default: float) -> float:
     """Seconds to wait before retrying, honoring a numeric `Retry-After`.
 
