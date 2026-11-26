@@ -436,7 +436,9 @@ def test_dataframe_client_reads_points_and_has_updated_at(client, generation_pay
 
     df = client.get_generation(zone="ES")
 
-    assert list(df.columns)[-3:] == ["timestamp", "value", "updated_at"]
+    columns = list(df.columns)
+    assert columns[:4] == ["timestamp", "zone", "production_type", "value"]
+    assert columns[-1] == "updated_at"
 
 
 @responses.activate

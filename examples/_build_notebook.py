@@ -219,8 +219,11 @@ md(
     "independent of any zone."
 )
 code("""\
-factors = client.get_factors(factor_type="carbon", production_type="solar")
-factors""")
+factors = client.get_factors(
+    factor_type="carbon", production_type="solar", start=START, end=END
+)
+print(factors.shape)
+factors.head()""")
 
 md(
     "## Status\n\n"

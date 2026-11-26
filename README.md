@@ -84,6 +84,12 @@ Every time-series `DataFrame` has a `timestamp` column parsed as a tz-aware
 conversion. Omit `zone` (and other filter params) to get every zone back in
 a single call instead of querying one at a time.
 
+The columns come in the same order in every method: first when (`timestamp`,
+or `start` and `end` for an aggregate), then what the series is (`zone`, the
+other zone of a flow, the type and the `scope`), then `value` and `unit`, then
+the quality and the provenance of the data (`valid`, `zone_status`,
+`data_state`, `datasource`...), and `updated_at` last.
+
 ### Updated at and long ranges
 
 Every time-series `DataFrame` has `timestamp`, `value` and `updated_at`, the moment that version of the value was stored (tz-aware, UTC).
