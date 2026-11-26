@@ -7,15 +7,15 @@ category (production type, counterpart zone, ...), each holding a list of
 points. Aggregate responses and flat listings (zones,
 status) have no `series` and pass through as a single row per record.
 
-Column order is a guaranteed contract, not incidental: it always follows the
-nesting order of the source JSON (record fields, then series fields, then
-block fields), with `timestamp`/`value` from an exploded series/block always
-appended last. This falls out of two deterministic properties rather than
-being hand-maintained per endpoint: wattnet-api's pydantic models serialize
-their fields in declaration order, and Python dict merges (`{**a, **b}`)
-preserve that order — so as long as each endpoint's field order doesn't
-change API-side, the resulting DataFrame's column order won't change either.
-The tests in `tests/unit/test_flatten.py` pin this down per payload shape.
+Column order is a guaranteed contract, the same for every endpoint: first when
+(`timestamp`, or `start` and `end` for an aggregate), then what the series is
+(`zone`, the counterpart zone, the type and the `scope`), then `value` and
+`unit`, then the quality and the provenance of the data (`valid`,
+`zone_status`, `data_state`, `datasource`, `coverage`...) in the order the API
+sends them, and `updated_at` last. `source` is the counterpart zone only next to
+a `zone`; in the factors it is where the factor comes from and stays with the
+provenance. The tests in `tests/unit/test_flatten.py` pin this down per payload
+shape.
 
 Every series or block holds its data as `points`, objects with `timestamp`,
 `value` and `updated_at` (the moment that version of the value was stored). The
@@ -62,7 +62,34 @@ def explode(
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
     if "updated_at" in df.columns:
         df["updated_at"] = pd.to_datetime(df["updated_at"], utc=True)
-    return df
+    return df[order_columns(list(df.columns))]
+
+
+_WHEN = ("timestamp", "start", "end")
+_SERIES = (
+    "zone",
+    "source",
+    "destination",
+    "origin",
+    "production_type",
+    "footprint_type",
+    "impact_type",
+    "factor_type",
+    "scope",
+)
+_VALUE = ("value", "unit")
+_LAST = ("updated_at",)
+
+
+def order_columns(columns: List[str]) -> List[str]:
+    """Return *columns* in the order of the contract (see the module docstring)."""
+    series = [
+        c for c in _SERIES if c in columns and (c != "source" or "zone" in columns)
+    ]
+    lead = [c for c in _WHEN if c in columns] + series
+    lead += [c for c in _VALUE if c in columns]
+    tail = [c for c in _LAST if c in columns]
+    return lead + [c for c in columns if c not in lead and c not in tail] + tail
 
 
 def _explode_series(
